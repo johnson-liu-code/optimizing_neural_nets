@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-
+import sys
 import random
 import pickle
 import numpy as np
@@ -11,10 +10,12 @@ from deap import base
 from deap import creator
 from deap import tools
 
-import genotype_to_phenotype
+from genes.genotype_to_phenotype import get_phenotype
 
-### For individuals with multiple layers, this function chops up the vector for an individual into chunks for each layer.
+### For individuals with multiple layers, this function chops up the chromosome vector into chunks for each layer.
+### Each layer is a represented by a 
 ### Don't know how this function works. Got this from the internet.
+
 def divide_chunks(my_list, n):
     chunks = [my_list[i * n:(i + 1) * n] for i in range((len(my_list) + n - 1) // n )]
     return chunks
@@ -35,7 +36,7 @@ def evaluate(individual):
     ### Convert genotype to phenotype.
     phenotype_list = []
     for chunk in x_chunks:
-        phenotype = genotype_to_phenotype.get_phenotype(chunk)
+        phenotype = get_phenotype(chunk)
         phenotype_list.append(phenotype)
 
     ### Open temporary file.
@@ -63,8 +64,11 @@ def evaluate(individual):
     ### Save time at which job was started.
     start = time.time()
 
+    #print(sys.path)
+
     ### Start the job.
-    proc = subprocess.Popen(['python3', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', 'python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(['python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     ### Save time at which job ended.
     end = time.time()
@@ -76,9 +80,11 @@ def evaluate(individual):
     inverse_duration = 1./duration
 
     ### Capture the output of the job.
-    out = proc.communicate()[0]
-
-    #print(out)
+    #print(proc.communicate())
+    out = proc.communicate()[0].decode('utf-8')
+#    with open('test_johnson.txt', 'w') as fil:
+#        fil.write(out)
+#    print(out)
 
     ### Compute loss, memory, and cpu usage fitnesses.
     inverse_loss = 1./float(out.upper().split()[-7])
@@ -90,8 +96,7 @@ def evaluate(individual):
 
     ### Collect the fitness values.
     fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-    # fitness = float(out.upper().split()[-1]),
-    #print fitness
+#    print(fitness)
 
     ### Return the fitness values.
     return fitness
@@ -99,8 +104,11 @@ def evaluate(individual):
 ### Define how offspring mutate.
 def myMutation(individual):
     #print('individual: ', individual)
+
+    ### Divide individual's chromosome into chunks that represent each layer.
     chunks = divide_chunks(individual, 9)
     #print('chunks:', chunks)
+
     ### Start a list for mutated individuals.
     mutated_individual = []
 
@@ -110,10 +118,10 @@ def myMutation(individual):
         ### Mutate layer type.
         chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 2, .5)
 
-        ### Mutate kernel x number. (This is expressed as a fraction of the dimension length.)
+        ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
         chunk[1] = tools.mutGaussian([ chunk[1] ], chunk[1], .1, .5)
 
-        ### Mutate kernel y number. (This is expressed as a fraction of the dimension length.)
+        ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
         chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, .5)
 
         ### Make the ratios positive.
@@ -153,15 +161,36 @@ def myMutation(individual):
 
     return mutated_individual
 
-def check_kernel_validity(individual, orginal_x_dimension, original_y_dimension):
+### Check if the x and y kernals are valid (they should
+### be smaller than the corresponding dimension size.)
+
+def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
+    ### Divide chromosome into chunks for each layer.
     chunks = divide_chunks(individual, 9)
     #print('chunks: ', chunks)
+
+    ### Set previous x and y dimensions equal to the original x and y dimensions.
+    ### (the x and y dimensions of the data set before the first layer.)
+
     previous_x_dimension = original_x_dimension
     previous_y_dimension = original_y_dimension
+
+    ### Start a list for the modified individual. (The modified individual has its kernal sizes
+    ### modified if the kernal size is invalid. Saves the unmodified individual if the kernal
+    ### size is valid.)
     modified_individual = []
+
+    ### Iterate over the layers.
     for chunk in chunks:
+        ### Get the kernal size for the x and y dimensions.
         kernel_x = chunk[2]
         kernel_y = chunk[3]
+
+        ### Check if the kernal size is greater than the dimension size. The kernel size
+        ### needs to be less than or equal to the dimension size minus 1. If the kernal
+        ### size is too large, generate a random number between 0 and 1 and take the floor
+        ### of that number times the dimension size. This gives a kernal size that is
+        ### less than the dimension size.
 
         if kernel_x > previous_x_dimension - 1:
             kernel_x_ratio = np.random.uniform(0, 1)
@@ -170,13 +199,20 @@ def check_kernel_validity(individual, orginal_x_dimension, original_y_dimension)
             kernel_y_ratio = np.random.uniform(0, 1)
             kernel_y = int(math.floor(kernel_y_ratio * previous_y_dimension))
 
+        ### Check if the kernal size is less than 1. If so, change the size to be equal to 1.
         if kernel_x < 1:
             kernel_x = 1
         if kernel_y < 1:
             kernel_y = 1
 
+        ### New dimension size is the old dimension size minus the quantity
+        ### kernel size minus 1.
+
         previous_x_dimension -= (kernel_x - 1)
         previous_y_dimension -= (kernel_y - 1)
+
+        ### Check if the kernel size is less than 1. If so, set the kernel
+        ### size to be equal to 1.
 
         if previous_x_dimension < 1:
             previous_x_dimension = 1
@@ -185,52 +221,66 @@ def check_kernel_validity(individual, orginal_x_dimension, original_y_dimension)
             previous_y_dimension = 1
             kernel_y = 1
 
+        ### Save the new, valid kernel sizes to the chunk (layer).
+
         chunk[2] = kernel_x
         chunk[3] = kernel_y
 
+        ### Save modified chunk to the new chromosome.
         modified_individual += chunk
 
+    ### Create the modified individual using keras.creator.Individual.
     modified_individual = creator.Individual(modified_individual)
 
     return modified_individual
 
-def layer():
+
+def layer():                            ### Return random integer between 0 and 2 for layer type.
     return np.random.randint(3)
-def nodes():
-    return np.random.randint(2, 100)
-def get_kernel_x(kernel_x):
+def nodes():                            ### Return random integer between 2 and 100 for number of nodes for layer.
+    #return np.random.randint(2, 101)
+    return 2
+def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (not sure why I did this).
     return kernel_x
-def get_kernel_y(kernel_y):
+def get_kernel_y(kernel_y):             ### Return kernel size for y dimension (not sure why I did this).
     return kernel_y
-def act():
+def act():                              ### Return random integer between 0 and 10 for layer activation type.
     return np.random.randint(11)
-def use_bias():
+def use_bias():                         ### Return random integer between 0 and 1 for use_bias = True or False.
     return np.random.randint(2)
-def bias_init():
+def bias_init():                        ### Return random integer between 0 and 10 for bias initializer for layer.
     return np.random.randint(11)
-def bias_reg():
+def bias_reg():                         ### Return random float between 0 and 1 for bias regularizer for layer.
     return np.random.uniform()
-def act_reg():
+def act_reg():                          ### Return random float between 0 and 1 for activation regularizer for layer.
     return np.random.uniform()
 
+### Extract training data.
 with open('../x_train.pkl', 'rb') as pkl_file:
     x_train = pickle.load(pkl_file, encoding = 'latin1')
 
+### Get dimension of data (size of x and y dimensions).
 original_x_dimension = x_train.shape[1]
 original_y_dimension = x_train.shape[2]
 previous_x_dimension = original_x_dimension
 previous_y_dimension = original_y_dimension
 
+### Not sure what this does besides setting the weights for each objective function.
 #creator.create('FitnessMax', base.Fitness, weights=(1, 1, 1))
 creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
 creator.create('Individual', list, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
+### Create a string of a command to be executed to register a 'type' of individual.
+### The 'type' of individual depends on how many layers the individual has.
 toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, ("
 
+### Set number of layers.
 #num_layers = 10
 num_layers = 1
+#num_layers = 20
 
+### Iterate over the number of layers and append to string to be executed.
 for n in range(num_layers):
     layer_str = 'layer_' + str(n)
     nodes_str = 'nodes_' + str(n)
@@ -279,28 +329,40 @@ for n in range(num_layers):
 
 toolbox_ind_str += "), n=1)"
 
+### Execute string to register individual type.
 exec(toolbox_ind_str)
 
+### Register population, mate, mutate, select, and evaluate functions.
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-
 toolbox.register('mate', tools.cxTwoPoint)
 toolbox.register('mutate', myMutation)
 toolbox.register('select', tools.selNSGA2)
 toolbox.register('evaluate', evaluate)
 
+### Create lists to keep track of the population and fitnesses.
 population_list = []
 fitness_list = []
 
 def main():
+    ### Set population size.
     #pop = toolbox.population(n=32)
-    pop = toolbox.population(n=2)
+    #pop = toolbox.population(n=16)
+    #pop = toolbox.population(n=8)
+    pop = toolbox.population(n=4)
+    #pop = toolbox.population(n=2)
     print('generation_-1_population: {}\n'.format(pop) )
     #population_list.append( pop )
-    #CXPB, MUTPB, NGEN = .5, .5, 100
-    CXPB, MUTPB, NGEN = .5, .5, 1
 
+    ### Set crossover probability, mutation probability, and number of generations.
+    #CXPB, MUTPB, NGEN = .5, .5, 100
+    #CXPB, MUTPB, NGEN = .5, .5, 50
+    CXPB, MUTPB, NGEN = .5, .5, 2
+    #CXPB, MUTPB, NGEN = .5, .5, 1
+
+    ### Not sure why this is needed, but the code doesn't work unless this is included.
     invalid_ind = [ind for ind in pop if not ind.fitness.valid]
     #print('invalid_ind: ', invalid_ind)
+    ### Evaluate the fitness for each individual.
     fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
 
     for ind, fit in zip(invalid_ind, fitnesses):
