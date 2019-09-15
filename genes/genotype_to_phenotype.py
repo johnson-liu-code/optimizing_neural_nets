@@ -9,6 +9,8 @@ from use_bias import use_bias
 from bias_initializer_type import bias_initializer_type
 from regularizers import regularizer_type
 
+### Turn chromosome (a vector of and integers and floats) into strings
+### that are fed into the file that runs the neural network.
 
 def get_phenotype(chromosome):
     #print('chromosome: ', chromosome)
@@ -29,7 +31,7 @@ def get_phenotype(chromosome):
 # 1: layer type					0:4
 # 2: number of nodes
 # 3: activation type				0:11
-# 4: use bias?					True or False
+# 4: use bias?					0 or 1
 # 5: bias initializer				0:10
 # 6: bias regularizer				random number between 0 and 1
 # 7: activation regularizer			random number between 0 and 1

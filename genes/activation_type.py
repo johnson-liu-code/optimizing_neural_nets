@@ -1,4 +1,6 @@
 
+# Type of activation for a layer.
+# https://keras.io/activations/
 
 activation_type = { 0: "activation='softmax'",
                     1: "activation='elu'",

@@ -14,6 +14,8 @@ regularizers = [ "bias_regularizer=regularizers.l1({0})".format(x) for x in list
 #print regularizers[1]
 '''
 
+# https://keras.io/layers/core/
+
 reg_types = ["bias_", "activity_"]
 
 def regularizer_type(reg_type, num):

@@ -1,4 +1,5 @@
-
+# Type of initializer for a layer.
+# https://keras.io/initializers/
 
 bias_initializer_type = {   0: "bias_initializer='zeros'",
                             1: "bias_initializer='ones'",
