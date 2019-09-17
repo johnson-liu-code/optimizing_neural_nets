@@ -1,24 +1,26 @@
 import sys
+import os
 import random
 import pickle
 import numpy as np
 import subprocess
 import math
 import time
+import datetime
+import itertools
 
 from deap import base
 from deap import creator
 from deap import tools
 
-from genes.genotype_to_phenotype import get_phenotype
+from genotype_to_phenotype import get_phenotype
+from functions.divide_chunks import divide_chunks
 
-### For individuals with multiple layers, this function chops up the chromosome vector into chunks for each layer.
-### Each layer is a represented by a 
-### Don't know how this function works. Got this from the internet.
 
-def divide_chunks(my_list, n):
-    chunks = [my_list[i * n:(i + 1) * n] for i in range((len(my_list) + n - 1) // n )]
-    return chunks
+today = datetime.datetime.now()
+year = today.year
+month = today.month
+day = today.day
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -31,6 +33,7 @@ with open(bot_file, 'r') as bot:
 
 ### Get the fitness of an individual.
 def evaluate(individual):
+    '''
     x_chunks = divide_chunks(individual, 9)
 
     ### Convert genotype to phenotype.
@@ -39,8 +42,19 @@ def evaluate(individual):
         phenotype = get_phenotype(chunk)
         phenotype_list.append(phenotype)
 
-    ### Open temporary file.
-    temp_file_name = 'temp_file.py'
+    neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+    if not os.path.isdir(neural_net_directory_name):
+        os.makedirs(neural_net_directory_name)
+
+    if not os.listdir(neural_net_directory_name):
+        next_file_number = 1
+
+    else:
+        last_file_name = sorted(os.listdir(neural_net_directory_name))
+        last_file_number = int(last_file_name[-1].split('_')[1])
+        next_file_number = last_file_number + 1
+
+    temp_file_name = neural_net_directory_name + '{0}{1:02d}{2:02d}_{3:06d}_neural_net.py'.format(year, month, day, next_file_number)    
 
     with open(temp_file_name, 'w') as tempfile:
         ### Write top wrapper to file.
@@ -48,7 +62,8 @@ def evaluate(individual):
             tempfile.write( line.split('\n')[0] + '\n')
 
         ### Randomly choose the number of nodes in the first layer.
-        number_of_first_layer_nodes = np.random.randint(2, 100)
+        #number_of_first_layer_nodes = np.random.randint(2, 100)
+        number_of_first_layer_nodes = 2
 
         ### Write first layer to file.
         tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_nodes) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
@@ -97,6 +112,9 @@ def evaluate(individual):
     ### Collect the fitness values.
     fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
 #    print(fitness)
+    '''
+
+    fitness = [1, 1, 1, 1, 1]
 
     ### Return the fitness values.
     return fitness
@@ -343,15 +361,33 @@ toolbox.register('evaluate', evaluate)
 population_list = []
 fitness_list = []
 
+data_directory_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+if not os.path.isdir(data_directory_name):
+    os.makedirs(data_directory_name)
+
+if not os.listdir(data_directory_name):
+    next_dir_number = 1
+
+else:
+    last_dir_name = sorted(os.listdir(data_directory_name))
+    last_dir_number = int(last_dir_name[-1])
+    next_dir_number = last_dir_number + 1
+
+data_date_dir_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+
 def main():
+    population_size = 16
+    selection_size = 8
+    print('Setting up population.\n')
     ### Set population size.
-    #pop = toolbox.population(n=32)
-    #pop = toolbox.population(n=16)
-    #pop = toolbox.population(n=8)
-    pop = toolbox.population(n=4)
-    #pop = toolbox.population(n=2)
-    print('generation_-1_population: {}\n'.format(pop) )
-    #population_list.append( pop )
+    pop = toolbox.population(n=population_size)
+    #print('generation_-1_population: {}\n'.format(pop) )
+    #print(pop)
+
+    population_indices = np.arange(0, selection_size)
+    #print(population_indices)
+
+    possible_pairs_of_parents = list(itertools.permutations(population_indices, 2))
 
     ### Set crossover probability, mutation probability, and number of generations.
     #CXPB, MUTPB, NGEN = .5, .5, 100
@@ -360,74 +396,124 @@ def main():
     #CXPB, MUTPB, NGEN = .5, .5, 1
 
     ### Not sure why this is needed, but the code doesn't work unless this is included.
-    invalid_ind = [ind for ind in pop if not ind.fitness.valid]
+    ####invalid_ind = [ind for ind in pop if not ind.fitness.valid]
     #print('invalid_ind: ', invalid_ind)
     ### Evaluate the fitness for each individual.
-    fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
+    ####fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
+    fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
 
-    for ind, fit in zip(invalid_ind, fitnesses):
+    for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
+
+    ###print(fitnesses)
+
+    ####generation_dir_name = data_date_dir_name + '{0:04d}/generation_00000/'.format(next_dir_number)
+    ####if not os.path.isdir(generation_dir_name):
+    ####    os.makedirs(generation_dir_name)
+
+    ####generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.pkl'.format(year, month, day, next_dir_number)
+    ####with open(generation_population_file_name, 'wb') as fil:
+    ####    pickle.dump(pop, fil)
+
+    ####generation_fitness_file_name = gneration_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_fitness.pkl'.format(year, month, day, next_dir_number)
+    ####with open(generation_fitness_file_name, 'wb') as fil:
+    ####    pickle.dump(fitnesses, fil)
+
+    ####for ind, fit in zip(invalid_ind, fitnesses):
+    ####    ind.fitness.values = fit
 
     #pop = toolbox.select(pop, len(pop))
 
-    for g in range(NGEN):
+    offspring = toolbox.select( pop, selection_size)
+    offspring = [toolbox.clone(ind) for ind in offspring]
+    ###print(offspring)
+
+    ### Iterate over the generations.
+    for g in range(1,NGEN):
+        print('Generation {} ... \n'.format(g))
         #offspring = tools.selTournamentDCD(pop, len(pop))
-        offspring = toolbox.select(pop, len(pop))
-        offspring = [toolbox.clone(ind) for ind in offspring]
+        ### Select offspring.
+        ####offspring = toolbox.select(pop, len(pop))
+        ### I forget what this does. Must look it up in the documentation: https://deap.readthedocs.io/en/master/.
+        ####offspring = [toolbox.clone(ind) for ind in offspring]
 
-        for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
+        #print(possible_pairs_of_parents)
+        mating_pair_indices = random.sample(possible_pairs_of_parents, selection_size)
+
+        #print(len(offspring))
+        #for m in mating_pairs:
+        #    print(offspring[m[0]], offspring[m[1]])
+        #mating_pairs = [ (offspring[m[0]], offspring[m[1]]) for m in mating_pair_indices]
+        #print(mating_pairs)
+
+        for pair in [ (offspring[m[0]], offspring[m[1]]) for m in mating_pair_indices]:
             if random.random() <= CXPB:
-                toolbox.mate(ind1, ind2)
+                toolbox.mate(pair[0], pair[1])
+                del pair[0].fitness.values
+                del pair[1].fitness.values
 
-            toolbox.mutate(ind1)
-            toolbox.mutate(ind2)
-            del ind1.fitness.values, ind2.fitness.values
+        for mutant in offspring:
+            if random.random() <= MUTPB:
+                toolbox.mutate(mutant)
+                del mutant.fitness.values
 
-        for i, inv_ind in enumerate(invalid_ind):
-            inv_ind = check_kernel_validity(inv_ind, original_x_dimension, original_y_dimension)
-            invalid_ind[i] = inv_ind
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        invalid_ind = [check_kernel_validity(inv_ind, original_x_dimension, original_y_dimension) for inv_ind in invalid_ind]
 
-        fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
-
+        fitnesses = list( map(toolbox.evaluate, invalid_ind) )
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 
-        fitnesses = list( toolbox.map(toolbox.evaluate, offspring) )
+        pop[:]
 
-        for off, fit in zip(offspring, fitnesses):
-            off.fitness.values = fit
+        ### Select individuals from offspring list to potential mate.
+        ####for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
+            ### Mate the individuals if a random number between 0 and 1 is less than the crossing probability.
+            ####if random.random() <= CXPB:
+                ####toolbox.mate(ind1, ind2)
 
-        fitnesses = list( map(toolbox.evaluate, pop) )
-        print('generation_{}_fitnesses: {}'.format(g, fitnesses) )
+            ####toolbox.mutate(ind1)
+            ####toolbox.mutate(ind2)
+            ####del ind1.fitness.values, ind2.fitness.values
+
+        ####for i, inv_ind in enumerate(invalid_ind):
+        ####    inv_ind = check_kernel_validity(inv_ind, original_x_dimension, original_y_dimension)
+        ####    invalid_ind[i] = inv_ind
+
+        ####fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
+
+        ####for ind, fit in zip(invalid_ind, fitnesses):
+        ####    ind.fitness.values = fit
+
+        ####fitnesses = list( toolbox.map(toolbox.evaluate, offspring) )
+
+        ####for off, fit in zip(offspring, fitnesses):
+        ####    off.fitness.values = fit
+
+        #####fitnesses = list( map(toolbox.evaluate, pop) )
+        #print('generation_{}_fitnesses: {}'.format(g, fitnesses) )
         #fitness_list.append( fitnesses )
 
-        pop = toolbox.select(pop + offspring, len(pop))
+        ####pop = toolbox.select(pop + offspring, len(pop))
 
-        pop[:] = offspring
-        print('generation_{}_population: {}'.format(g, pop) )
+        ####pop[:] = offspring
+        #print('generation_{}_population: {}'.format(g, pop) )
         #population_list.append( pop )
 
-    fitnesses = list( map(toolbox.evaluate, pop) )
+    ####fitnesses = list( map(toolbox.evaluate, pop) )
 
     # fits = [ind.fitness.values[0] for ind in pop]
 
-    return pop, fitnesses
+    ####return pop, fitnesses
+    return pop
     #return population_list, fitness_list
 
 # main()
-pop, fitnesses = main()
+####pop, fitnesses = main()
+pop = main()
 #population_list, fitness_list = main()
 #data = [population_list, fitness_list]
 
-#with open('20190829_test_01.pkl', 'wb') as fil:
-#    pickle.dump(data, fil, protocol = 2)
 
 #print('final_population: {}'.format(pop) )
 #print('final_fitnesses: {}'.format(fitnesses) )
-
-
-# print original_x_dimension, '\n'
-# print original_y_dimension, '\n'
-# x = [2, 3, 22, 27, 0, 1, 6, 0.19334968375277173, 0.06346641132347908, 0, 3, 30, 30, 3, 1, 0, 0.496359412700602, 0.5837478239730752, 1, 2, 30, 30, 9, 0, 1, 0.6322657300752614, 0.7064246891981825, 2, 2, 30, 30, 10, 1, 7, 0.8706446388657239, 0.6199682951025327]
-# print 'original: ', x
-# print 'checked: ', check_kernel_validity(x, original_x_dimension, original_y_dimension)

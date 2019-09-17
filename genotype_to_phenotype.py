@@ -3,11 +3,17 @@
 import numpy as np
 
 
-from layer_type import layer_type
-from activation_type import activation_type
-from use_bias import use_bias
-from bias_initializer_type import bias_initializer_type
-from regularizers import regularizer_type
+#from layer_type import layer_type
+#from activation_type import activation_type
+#from use_bias import use_bias
+#from bias_initializer_type import bias_initializer_type
+#from regularizers import regularizer_type
+
+from genes.layer_type import layer_type
+from genes.activation_type import activation_type
+from genes.use_bias import use_bias
+from genes.bias_initializer_type import bias_initializer_type
+from genes.regularizer_type import regularizer_type
 
 ### Turn chromosome (a vector of and integers and floats) into strings
 ### that are fed into the file that runs the neural network.
