@@ -1,7 +1,7 @@
 import sys
 import os
-import random
 import pickle
+import random
 import numpy as np
 import subprocess
 import math
@@ -376,36 +376,31 @@ else:
 data_date_dir_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
 
 def main():
-    population_size = 16
-    selection_size = 8
+    population_size = 8
+    selection_size = 4
+    cross_over_size = population_size - selection_size
+
     print('Setting up population.\n')
+
     ### Set population size.
     pop = toolbox.population(n=population_size)
-    #print('generation_-1_population: {}\n'.format(pop) )
-    #print(pop)
+    print('init pop: ')
+    for p in pop:
+        print(p)
 
+    '''
     population_indices = np.arange(0, selection_size)
-    #print(population_indices)
-
     possible_pairs_of_parents = list(itertools.permutations(population_indices, 2))
+    print(possible_pairs_of_parents)
+    '''
 
     ### Set crossover probability, mutation probability, and number of generations.
-    #CXPB, MUTPB, NGEN = .5, .5, 100
-    #CXPB, MUTPB, NGEN = .5, .5, 50
-    CXPB, MUTPB, NGEN = .5, .5, 2
-    #CXPB, MUTPB, NGEN = .5, .5, 1
+    MUTPB, NGEN = .5, 2
 
-    ### Not sure why this is needed, but the code doesn't work unless this is included.
-    ####invalid_ind = [ind for ind in pop if not ind.fitness.valid]
-    #print('invalid_ind: ', invalid_ind)
-    ### Evaluate the fitness for each individual.
-    ####fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
     fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
 
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
-
-    ###print(fitnesses)
 
     ####generation_dir_name = data_date_dir_name + '{0:04d}/generation_00000/'.format(next_dir_number)
     ####if not os.path.isdir(generation_dir_name):
@@ -419,90 +414,84 @@ def main():
     ####with open(generation_fitness_file_name, 'wb') as fil:
     ####    pickle.dump(fitnesses, fil)
 
-    ####for ind, fit in zip(invalid_ind, fitnesses):
-    ####    ind.fitness.values = fit
-
-    #pop = toolbox.select(pop, len(pop))
-
-    offspring = toolbox.select( pop, selection_size)
-    offspring = [toolbox.clone(ind) for ind in offspring]
-    ###print(offspring)
-
     ### Iterate over the generations.
-    for g in range(1,NGEN):
+    for g in range(1, NGEN):
+
+        selected_parents = toolbox.select( pop, selection_size )
+        print('selected_parents: ')
+        for s in selected_parents:
+            print(s)
+
         print('Generation {} ... \n'.format(g))
-        #offspring = tools.selTournamentDCD(pop, len(pop))
-        ### Select offspring.
-        ####offspring = toolbox.select(pop, len(pop))
-        ### I forget what this does. Must look it up in the documentation: https://deap.readthedocs.io/en/master/.
-        ####offspring = [toolbox.clone(ind) for ind in offspring]
 
         #print(possible_pairs_of_parents)
-        mating_pair_indices = random.sample(possible_pairs_of_parents, selection_size)
+        ### Select offspring.
+        #mating_pair_indices = random.sample(possible_pairs_of_parents, int(float(selection_size)/2) )
 
-        #print(len(offspring))
-        #for m in mating_pairs:
-        #    print(offspring[m[0]], offspring[m[1]])
-        #mating_pairs = [ (offspring[m[0]], offspring[m[1]]) for m in mating_pair_indices]
-        #print(mating_pairs)
+        new_children = []
+        '''
+        for p, pair in enumerate([ (selected_parents[m[0]], selected_parents[m[1]]) for m in mating_pair_indices]):
+            r = np.random.uniform(0, 1)
+            if r <= CXPB:
+                child1, child2 = toolbox.mate(pair[0], pair[1])
+                child1, child2 = toolbox.clone(child1), toolbox.clone(child2)
+                del child1.fitness.values
+                del child2.fitness.values
+                new_children.append(child1)
+                new_children.append(child2)
+            else:
+                clone1, clone2 = toolbox.clone(pair[0]), toolbox.clone(pair[1])
+                del clone1.fitness.values
+                del clone2.fitness.values
+                new_children.append(clone1)
+                new_children.append(clone2)
+        '''
+        for c in range(cross_over_size):
+            parent1, parent2 = random.sample(selected_parents, 2)
+            parent1, parent2 = toolbox.clone(parent1), toolbox.clone(parent2)
+            child1, child2 = toolbox.mate(parent1, parent2)
+            new_children.append(child1)
 
-        for pair in [ (offspring[m[0]], offspring[m[1]]) for m in mating_pair_indices]:
-            if random.random() <= CXPB:
-                toolbox.mate(pair[0], pair[1])
-                del pair[0].fitness.values
-                del pair[1].fitness.values
+        #print('new_children: ')
+        #for c in new_children:
+        #    print(c)
 
-        for mutant in offspring:
-            if random.random() <= MUTPB:
-                toolbox.mutate(mutant)
-                del mutant.fitness.values
+        #for p in pop:
+        #    print(p)
+        #print('\n\n')
 
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        invalid_ind = [check_kernel_validity(inv_ind, original_x_dimension, original_y_dimension) for inv_ind in invalid_ind]
+        #pop = selected_parents + new_children
 
-        fitnesses = list( map(toolbox.evaluate, invalid_ind) )
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
+        print('selected_parents: ')
+        for s in selected_parents:
+            print(s)
+        print('new_children: ')
+        for c in new_children:
+            print(c)
 
-        pop[:]
+        for p in pop:
+            if p in selected_parents:
+                print('yes selected')
+            elif p in new_children:
+                print('yes new')
 
-        ### Select individuals from offspring list to potential mate.
-        ####for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
-            ### Mate the individuals if a random number between 0 and 1 is less than the crossing probability.
-            ####if random.random() <= CXPB:
-                ####toolbox.mate(ind1, ind2)
+        for p in pop:
+            print(p)
 
-            ####toolbox.mutate(ind1)
-            ####toolbox.mutate(ind2)
-            ####del ind1.fitness.values, ind2.fitness.values
+        #for m, mutant in enumerate(new_children):
+        #    r = np.random.uniform(0, 1)
+        #    if r <= MUTPB:
+        #        new_children[m] = toolbox.mutate(mutant)
 
-        ####for i, inv_ind in enumerate(invalid_ind):
-        ####    inv_ind = check_kernel_validity(inv_ind, original_x_dimension, original_y_dimension)
-        ####    invalid_ind[i] = inv_ind
+        new_children = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_children]
 
-        ####fitnesses = list( toolbox.map(toolbox.evaluate, invalid_ind) )
+        #for ind in pop:
+            #print(ind, ind.fitness.values)
+            #print(ind)
 
-        ####for ind, fit in zip(invalid_ind, fitnesses):
-        ####    ind.fitness.values = fit
-
-        ####fitnesses = list( toolbox.map(toolbox.evaluate, offspring) )
-
-        ####for off, fit in zip(offspring, fitnesses):
-        ####    off.fitness.values = fit
-
-        #####fitnesses = list( map(toolbox.evaluate, pop) )
-        #print('generation_{}_fitnesses: {}'.format(g, fitnesses) )
-        #fitness_list.append( fitnesses )
-
-        ####pop = toolbox.select(pop + offspring, len(pop))
-
-        ####pop[:] = offspring
-        #print('generation_{}_population: {}'.format(g, pop) )
-        #population_list.append( pop )
-
-    ####fitnesses = list( map(toolbox.evaluate, pop) )
-
-    # fits = [ind.fitness.values[0] for ind in pop]
+        #fitnesses = list( map(toolbox.evaluate, selected_pop) )
+        #for ind, fit in zip(pop, fitnesses):
+        #    ind.fitness.values = fit
 
     ####return pop, fitnesses
     return pop
