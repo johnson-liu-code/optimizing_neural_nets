@@ -17,10 +17,6 @@ from genotype_to_phenotype import get_phenotype
 from functions.divide_chunks import divide_chunks
 
 
-today = datetime.datetime.now()
-year = today.year
-month = today.month
-day = today.day
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -31,9 +27,29 @@ with open(top_file, 'r') as top:
 with open(bot_file, 'r') as bot:
     bot_lines = bot.readlines()
 
+
+today = datetime.datetime.now()
+year = today.year
+month = today.month
+day = today.day
+
+data_directory_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+if not os.path.isdir(data_directory_name):
+    os.makedirs(data_directory_name)
+
+if not os.listdir(data_directory_name):
+    next_dir_number = 1
+
+else:
+    last_dir_name = sorted(os.listdir(data_directory_name))
+    last_dir_number = int(last_dir_name[-1])
+    next_dir_number = last_dir_number + 1
+
+data_date_dir_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+
+
 ### Get the fitness of an individual.
 def evaluate(individual):
-    '''
     x_chunks = divide_chunks(individual, 9)
 
     ### Convert genotype to phenotype.
@@ -42,7 +58,7 @@ def evaluate(individual):
         phenotype = get_phenotype(chunk)
         phenotype_list.append(phenotype)
 
-    neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+    neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
     if not os.path.isdir(neural_net_directory_name):
         os.makedirs(neural_net_directory_name)
 
@@ -75,11 +91,9 @@ def evaluate(individual):
         ### Write bottom wrapper to file.
         for line in bot_lines:
             tempfile.write( line.split('\n')[0] + '\n' )
-
+    '''
     ### Save time at which job was started.
     start = time.time()
-
-    #print(sys.path)
 
     ### Start the job.
     #proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', 'python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -97,9 +111,6 @@ def evaluate(individual):
     ### Capture the output of the job.
     #print(proc.communicate())
     out = proc.communicate()[0].decode('utf-8')
-#    with open('test_johnson.txt', 'w') as fil:
-#        fil.write(out)
-#    print(out)
 
     ### Compute loss, memory, and cpu usage fitnesses.
     inverse_loss = 1./float(out.upper().split()[-7])
@@ -111,45 +122,41 @@ def evaluate(individual):
 
     ### Collect the fitness values.
     fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-#    print(fitness)
     '''
-
     fitness = [1, 1, 1, 1, 1]
 
     ### Return the fitness values.
     return fitness
 
-### Define how offspring mutate.
+### Define how individuals mutate.
 def myMutation(individual):
-    #print('individual: ', individual)
-
     ### Divide individual's chromosome into chunks that represent each layer.
     chunks = divide_chunks(individual, 9)
-    #print('chunks:', chunks)
 
     ### Start a list for mutated individuals.
     mutated_individual = []
 
     ### Iterate over individuals.
-    #print(chunks)
     for chunk in chunks:
         ### Mutate layer type.
         chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 2, .5)
 
+        ### Mutate number of nodes.
+        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, .5)
+
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
-        chunk[1] = tools.mutGaussian([ chunk[1] ], chunk[1], .1, .5)
-
-        ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
+        #print('chunk2: ', chunk[2])
         chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, .5)
-
+        #print('chunk2: ', chunk[2])
+        ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
+        #print('chunk3: ', chunk[3])
+        chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, .5)
+        #print('chunk3: ', chunk[3])
         ### Make the ratios positive.
-        if chunk[1][0][0] < 0:
-            chunk[1][0][0] += 1
         if chunk[2][0][0] < 0:
             chunk[2][0][0] += 1
-
-        ### Mutate number of nodes.
-        chunk[3] = tools.mutUniformInt([ chunk[3] ], 2, 4, .5)
+        if chunk[3][0][0] < 0:
+            chunk[3][0][0] += 1
 
         ### Mutate activation type.
         chunk[4] = tools.mutUniformInt([ chunk[4] ], 0, 10, .5)
@@ -185,11 +192,9 @@ def myMutation(individual):
 def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
     ### Divide chromosome into chunks for each layer.
     chunks = divide_chunks(individual, 9)
-    #print('chunks: ', chunks)
 
     ### Set previous x and y dimensions equal to the original x and y dimensions.
     ### (the x and y dimensions of the data set before the first layer.)
-
     previous_x_dimension = original_x_dimension
     previous_y_dimension = original_y_dimension
 
@@ -212,9 +217,13 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
         if kernel_x > previous_x_dimension - 1:
             kernel_x_ratio = np.random.uniform(0, 1)
+            print('kernel x: ', kernel_x)
             kernel_x = int(math.floor(kernel_x_ratio * previous_x_dimension))
+            print('kernel x: ', kernel_x)
         if kernel_y > previous_y_dimension - 1:
+            print('kernel y: ', kernel_y)
             kernel_y_ratio = np.random.uniform(0, 1)
+            print('kernel y: ', kernel_y)
             kernel_y = int(math.floor(kernel_y_ratio * previous_y_dimension))
 
         ### Check if the kernal size is less than 1. If so, change the size to be equal to 1.
@@ -241,12 +250,15 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
         ### Save the new, valid kernel sizes to the chunk (layer).
 
+        print('chunk2: ', chunk[2])
+        print('chunk3: ', chunk[3])
         chunk[2] = kernel_x
         chunk[3] = kernel_y
 
         ### Save modified chunk to the new chromosome.
         modified_individual += chunk
 
+    print('modified_individual: ', modified_individual)
     ### Create the modified individual using keras.creator.Individual.
     modified_individual = creator.Individual(modified_individual)
 
@@ -284,7 +296,6 @@ previous_x_dimension = original_x_dimension
 previous_y_dimension = original_y_dimension
 
 ### Not sure what this does besides setting the weights for each objective function.
-#creator.create('FitnessMax', base.Fitness, weights=(1, 1, 1))
 creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
 creator.create('Individual', list, fitness=creator.FitnessMax)
 
@@ -357,10 +368,6 @@ toolbox.register('mutate', myMutation)
 toolbox.register('select', tools.selNSGA2)
 toolbox.register('evaluate', evaluate)
 
-### Create lists to keep track of the population and fitnesses.
-population_list = []
-fitness_list = []
-
 data_directory_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
 if not os.path.isdir(data_directory_name):
     os.makedirs(data_directory_name)
@@ -376,133 +383,115 @@ else:
 data_date_dir_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
 
 def main():
+    ### Population size.
     population_size = 8
+
+    ### Number of individuals (parents) to clone for the next generation.
     selection_size = 4
+
+    ### Number of individuals made through crossing of selected parents.
     cross_over_size = population_size - selection_size
 
     print('Setting up population.\n')
 
-    ### Set population size.
+    ### Set up population.
     pop = toolbox.population(n=population_size)
-    print('init pop: ')
-    for p in pop:
-        print(p)
 
-    '''
-    population_indices = np.arange(0, selection_size)
-    possible_pairs_of_parents = list(itertools.permutations(population_indices, 2))
-    print(possible_pairs_of_parents)
-    '''
+    ### Set mutation probability and number of generations.
+    MUTPB = .5
+    NGEN = 2
 
-    ### Set crossover probability, mutation probability, and number of generations.
-    MUTPB, NGEN = .5, 2
-
+    ### Evaluate fitness of initial population.
     fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
 
+    ### Save fitness values to individuals.
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
 
-    ####generation_dir_name = data_date_dir_name + '{0:04d}/generation_00000/'.format(next_dir_number)
-    ####if not os.path.isdir(generation_dir_name):
-    ####    os.makedirs(generation_dir_name)
+    ### Create directory to save the data for the 0th generation.
+    generation_dir_name = data_date_dir_name + '{0:04d}/generation_00000/'.format(next_dir_number)
+    if not os.path.isdir(generation_dir_name):
+        os.makedirs(generation_dir_name)
 
-    ####generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.pkl'.format(year, month, day, next_dir_number)
-    ####with open(generation_population_file_name, 'wb') as fil:
-    ####    pickle.dump(pop, fil)
+    ### Save the population of the 0th generation.
+    generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.pkl'.format(year, month, day, next_dir_number)
+    with open(generation_population_file_name, 'wb') as fil:
+        pickle.dump(pop, fil)
 
-    ####generation_fitness_file_name = gneration_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_fitness.pkl'.format(year, month, day, next_dir_number)
-    ####with open(generation_fitness_file_name, 'wb') as fil:
-    ####    pickle.dump(fitnesses, fil)
+    ### Save the fitnesses of the 0th generation.
+    generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_fitness.pkl'.format(year, month, day, next_dir_number)
+    with open(generation_fitness_file_name, 'wb') as fil:
+        pickle.dump(fitnesses, fil)
 
     ### Iterate over the generations.
     for g in range(1, NGEN):
-
+        ### Select the parents.
         selected_parents = toolbox.select( pop, selection_size )
-        print('selected_parents: ')
-        for s in selected_parents:
-            print(s)
 
         print('Generation {} ... \n'.format(g))
 
-        #print(possible_pairs_of_parents)
-        ### Select offspring.
-        #mating_pair_indices = random.sample(possible_pairs_of_parents, int(float(selection_size)/2) )
-
         new_children = []
-        '''
-        for p, pair in enumerate([ (selected_parents[m[0]], selected_parents[m[1]]) for m in mating_pair_indices]):
-            r = np.random.uniform(0, 1)
-            if r <= CXPB:
-                child1, child2 = toolbox.mate(pair[0], pair[1])
-                child1, child2 = toolbox.clone(child1), toolbox.clone(child2)
-                del child1.fitness.values
-                del child2.fitness.values
-                new_children.append(child1)
-                new_children.append(child2)
-            else:
-                clone1, clone2 = toolbox.clone(pair[0]), toolbox.clone(pair[1])
-                del clone1.fitness.values
-                del clone2.fitness.values
-                new_children.append(clone1)
-                new_children.append(clone2)
-        '''
+
+        ### Mate the parents to form new individuals.
         for c in range(cross_over_size):
             parent1, parent2 = random.sample(selected_parents, 2)
             parent1, parent2 = toolbox.clone(parent1), toolbox.clone(parent2)
             child1, child2 = toolbox.mate(parent1, parent2)
+            del child1.fitness.values
             new_children.append(child1)
 
-        #print('new_children: ')
-        #for c in new_children:
-        #    print(c)
+        ### New population consists of selected parents and their children.
+        new_population = selected_parents + new_children
 
-        #for p in pop:
-        #    print(p)
-        #print('\n\n')
+        ### Mutate the new population.
+        for m, mutant in enumerate(new_population):
+            r = np.random.uniform(0, 1)
+            if r <= MUTPB:
+                #print('before mutation: ', mutant)
+                mutated_ind = toolbox.mutate(mutant)
+                #print('mutated: ', mutated_ind)
+                del mutated_ind.fitness.values
+                new_population[m] = mutated_ind
 
-        #pop = selected_parents + new_children
-
-        print('selected_parents: ')
-        for s in selected_parents:
-            print(s)
-        print('new_children: ')
-        for c in new_children:
-            print(c)
-
-        for p in pop:
-            if p in selected_parents:
-                print('yes selected')
-            elif p in new_children:
-                print('yes new')
-
-        for p in pop:
-            print(p)
-
-        #for m, mutant in enumerate(new_children):
-        #    r = np.random.uniform(0, 1)
-        #    if r <= MUTPB:
-        #        new_children[m] = toolbox.mutate(mutant)
-
-        new_children = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_children]
-
-        #for ind in pop:
-            #print(ind, ind.fitness.values)
-            #print(ind)
-
-        #fitnesses = list( map(toolbox.evaluate, selected_pop) )
-        #for ind, fit in zip(pop, fitnesses):
-        #    ind.fitness.values = fit
-
-    ####return pop, fitnesses
-    return pop
-    #return population_list, fitness_list
-
-# main()
-####pop, fitnesses = main()
-pop = main()
-#population_list, fitness_list = main()
-#data = [population_list, fitness_list]
+        ### Check the kernel validity of the new population.
+        #print('before check kernel')
+        #for n in new_population:
+        #    print(n)
+        #new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
 
 
-#print('final_population: {}'.format(pop) )
-#print('final_fitnesses: {}'.format(fitnesses) )
+        for n, ind in enumerate(new_population):
+            print('before check kernel: ', ind)
+            ind = toolbox.clone(ind)
+            checked_ind = check_kernel_validity(ind, original_x_dimension, original_y_dimension)
+            print('after check kernel: ', checked_ind)
+        #print('after check kernel')
+        #for n in new_population:
+        #    print(n)
+        
+        fitnesses = list( map(toolbox.evaluate, new_population) )
+        for ind, fit in zip(new_population, fitnesses):
+            ind.fitness.values = fit
+
+        ### Set pop to be the new population.
+        pop = new_population
+
+        ### Create directory to save the data for the g-th generation.
+        generation_dir_name = data_date_dir_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
+        if not os.path.isdir(generation_dir_name):
+            os.makedirs(generation_dir_name)
+
+        ### Save the population of the g-th generation.
+        generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.pkl'.format(year, month, day, next_dir_number, g)
+        with open(generation_population_file_name, 'wb') as fil:
+            pickle.dump(pop, fil)
+
+        ### Save the fitnesses of the g-th generation.
+        generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_fitness.pkl'.format(year, month, day, next_dir_number, g)
+        with open(generation_fitness_file_name, 'wb') as fil:
+            pickle.dump(fitnesses, fil)
+
+    ### Return the final population and final fitnesses.
+    return pop, fitnesses
+
+pop, fitnesses = main()

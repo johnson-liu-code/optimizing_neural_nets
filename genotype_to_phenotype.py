@@ -23,9 +23,9 @@ def get_phenotype(chromosome):
     #print('chromosome[0]: ', chromosome[0])
     phenotype = "model.add("
     phenotype += layer_type[chromosome[0]] + "("                # layer type
-    phenotype += str(chromosome[1]) + ", "
+    phenotype += str(chromosome[1]) + ", "                      # number of nodes
     if chromosome[0] != 0:
-        phenotype += "(" + str(chromosome[2]) + ", " + str(chromosome[3]) + "), "
+        phenotype += "(" + str(chromosome[2]) + ", " + str(chromosome[3]) + "), " # kernel x size and kernel y size
     phenotype += activation_type[chromosome[4]] + ", "          # activation type
     phenotype += use_bias[chromosome[5]] + ", "                 # use bais
     phenotype += bias_initializer_type[chromosome[6]] + ", "    # bias initializer
@@ -34,13 +34,15 @@ def get_phenotype(chromosome):
 
     return phenotype + "))"
 
-# 1: layer type					0:4
-# 2: number of nodes
-# 3: activation type				0:11
-# 4: use bias?					0 or 1
-# 5: bias initializer				0:10
-# 6: bias regularizer				random number between 0 and 1
-# 7: activation regularizer			random number between 0 and 1
+# 0: layer type					0:4
+# 1: number of nodes
+# 2: kernel x
+# 3: kernel y
+# 4: activation type				0:11
+# 5: use bias?					0 or 1
+# 6: bias initializer				0:10
+# 7: bias regularizer				random number between 0 and 1
+# 8: activation regularizer			random number between 0 and 1
 
 
 '''
