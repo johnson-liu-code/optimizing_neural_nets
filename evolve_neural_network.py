@@ -17,6 +17,8 @@ from genotype_to_phenotype import get_phenotype
 from functions.divide_chunks import divide_chunks
 
 
+### Set number of layers.
+num_layers = 20
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -26,7 +28,6 @@ with open(top_file, 'r') as top:
     top_lines = top.readlines()
 with open(bot_file, 'r') as bot:
     bot_lines = bot.readlines()
-
 
 today = datetime.datetime.now()
 year = today.year
@@ -45,8 +46,9 @@ else:
     last_dir_number = int(last_dir_name[-1])
     next_dir_number = last_dir_number + 1
 
-data_date_dir_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
-
+data_dir_number_name = data_directory_name + '{0:04d}/'.format(next_dir_number)
+if not os.path.isdir(data_dir_number_name):
+    os.makedirs(data_dir_number_name)
 
 ### Get the fitness of an individual.
 def evaluate(individual):
@@ -91,7 +93,7 @@ def evaluate(individual):
         ### Write bottom wrapper to file.
         for line in bot_lines:
             tempfile.write( line.split('\n')[0] + '\n' )
-    '''
+    
     ### Save time at which job was started.
     start = time.time()
 
@@ -109,7 +111,6 @@ def evaluate(individual):
     inverse_duration = 1./duration
 
     ### Capture the output of the job.
-    #print(proc.communicate())
     out = proc.communicate()[0].decode('utf-8')
 
     ### Compute loss, memory, and cpu usage fitnesses.
@@ -122,8 +123,8 @@ def evaluate(individual):
 
     ### Collect the fitness values.
     fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-    '''
-    fitness = [1, 1, 1, 1, 1]
+    
+    #fitness = [1, 1, 1, 1, 1]
 
     ### Return the fitness values.
     return fitness
@@ -145,13 +146,11 @@ def myMutation(individual):
         chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, .5)
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
-        #print('chunk2: ', chunk[2])
         chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, .5)
-        #print('chunk2: ', chunk[2])
+
         ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
-        #print('chunk3: ', chunk[3])
         chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, .5)
-        #print('chunk3: ', chunk[3])
+
         ### Make the ratios positive.
         if chunk[2][0][0] < 0:
             chunk[2][0][0] += 1
@@ -217,13 +216,10 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
         if kernel_x > previous_x_dimension - 1:
             kernel_x_ratio = np.random.uniform(0, 1)
-            print('kernel x: ', kernel_x)
             kernel_x = int(math.floor(kernel_x_ratio * previous_x_dimension))
-            print('kernel x: ', kernel_x)
+
         if kernel_y > previous_y_dimension - 1:
-            print('kernel y: ', kernel_y)
             kernel_y_ratio = np.random.uniform(0, 1)
-            print('kernel y: ', kernel_y)
             kernel_y = int(math.floor(kernel_y_ratio * previous_y_dimension))
 
         ### Check if the kernal size is less than 1. If so, change the size to be equal to 1.
@@ -249,16 +245,17 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
             kernel_y = 1
 
         ### Save the new, valid kernel sizes to the chunk (layer).
+        if kernel_x < 1:
+            kernel_x = 1
+        if kernel_y < 1:
+            kernel_y = 1
 
-        print('chunk2: ', chunk[2])
-        print('chunk3: ', chunk[3])
-        chunk[2] = kernel_x
-        chunk[3] = kernel_y
+        chunk[2] = int(math.floor(kernel_x))
+        chunk[3] = int(math.floor(kernel_y))
 
         ### Save modified chunk to the new chromosome.
         modified_individual += chunk
 
-    print('modified_individual: ', modified_individual)
     ### Create the modified individual using keras.creator.Individual.
     modified_individual = creator.Individual(modified_individual)
 
@@ -269,7 +266,8 @@ def layer():                            ### Return random integer between 0 and 
     return np.random.randint(3)
 def nodes():                            ### Return random integer between 2 and 100 for number of nodes for layer.
     #return np.random.randint(2, 101)
-    return 2
+    return np.random.randint(2, 11)
+    #return 2
 def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (not sure why I did this).
     return kernel_x
 def get_kernel_y(kernel_y):             ### Return kernel size for y dimension (not sure why I did this).
@@ -304,10 +302,6 @@ toolbox = base.Toolbox()
 ### The 'type' of individual depends on how many layers the individual has.
 toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, ("
 
-### Set number of layers.
-#num_layers = 10
-num_layers = 1
-#num_layers = 20
 
 ### Iterate over the number of layers and append to string to be executed.
 for n in range(num_layers):
@@ -368,26 +362,12 @@ toolbox.register('mutate', myMutation)
 toolbox.register('select', tools.selNSGA2)
 toolbox.register('evaluate', evaluate)
 
-data_directory_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
-if not os.path.isdir(data_directory_name):
-    os.makedirs(data_directory_name)
-
-if not os.listdir(data_directory_name):
-    next_dir_number = 1
-
-else:
-    last_dir_name = sorted(os.listdir(data_directory_name))
-    last_dir_number = int(last_dir_name[-1])
-    next_dir_number = last_dir_number + 1
-
-data_date_dir_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
-
 def main():
     ### Population size.
-    population_size = 8
+    population_size = 32
 
     ### Number of individuals (parents) to clone for the next generation.
-    selection_size = 4
+    selection_size = 16
 
     ### Number of individuals made through crossing of selected parents.
     cross_over_size = population_size - selection_size
@@ -399,7 +379,7 @@ def main():
 
     ### Set mutation probability and number of generations.
     MUTPB = .5
-    NGEN = 2
+    NGEN = 32
 
     ### Evaluate fitness of initial population.
     fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
@@ -409,7 +389,7 @@ def main():
         ind.fitness.values = fit
 
     ### Create directory to save the data for the 0th generation.
-    generation_dir_name = data_date_dir_name + '{0:04d}/generation_00000/'.format(next_dir_number)
+    generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
     if not os.path.isdir(generation_dir_name):
         os.makedirs(generation_dir_name)
 
@@ -447,28 +427,13 @@ def main():
         for m, mutant in enumerate(new_population):
             r = np.random.uniform(0, 1)
             if r <= MUTPB:
-                #print('before mutation: ', mutant)
                 mutated_ind = toolbox.mutate(mutant)
-                #print('mutated: ', mutated_ind)
                 del mutated_ind.fitness.values
                 new_population[m] = mutated_ind
 
         ### Check the kernel validity of the new population.
-        #print('before check kernel')
-        #for n in new_population:
-        #    print(n)
-        #new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
+        new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
 
-
-        for n, ind in enumerate(new_population):
-            print('before check kernel: ', ind)
-            ind = toolbox.clone(ind)
-            checked_ind = check_kernel_validity(ind, original_x_dimension, original_y_dimension)
-            print('after check kernel: ', checked_ind)
-        #print('after check kernel')
-        #for n in new_population:
-        #    print(n)
-        
         fitnesses = list( map(toolbox.evaluate, new_population) )
         for ind, fit in zip(new_population, fitnesses):
             ind.fitness.values = fit
@@ -477,7 +442,7 @@ def main():
         pop = new_population
 
         ### Create directory to save the data for the g-th generation.
-        generation_dir_name = data_date_dir_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
+        generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
         if not os.path.isdir(generation_dir_name):
             os.makedirs(generation_dir_name)
 
