@@ -19,6 +19,8 @@ from functions.divide_chunks import divide_chunks
 
 ### Set number of layers.
 num_layers = 20
+print('num_layers: ', num_layers)
+#num_layers = 10
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -52,7 +54,7 @@ if not os.path.isdir(data_dir_number_name):
 
 ### Get the fitness of an individual.
 def evaluate(individual):
-    x_chunks = divide_chunks(individual, 9)
+    x_chunks = divide_chunks(individual, 10)    # There are 10 genes within the chromosome.
 
     ### Convert genotype to phenotype.
     phenotype_list = []
@@ -79,12 +81,12 @@ def evaluate(individual):
         for line in top_lines:
             tempfile.write( line.split('\n')[0] + '\n')
 
-        ### Randomly choose the number of nodes in the first layer.
-        #number_of_first_layer_nodes = np.random.randint(2, 100)
-        number_of_first_layer_nodes = 2
+        ### Randomly choose the number of output_dimensionality in the first layer.
+        #number_of_first_layer_output_dimensionality = np.random.randint(2, 100)
+        number_of_first_layer_output_dimensionality = 2
 
         ### Write first layer to file.
-        tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_nodes) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
+        tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_output_dimensionality) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
 
         ### Write phenotype to file.
         for phenotype in phenotype_list:
@@ -132,7 +134,7 @@ def evaluate(individual):
 ### Define how individuals mutate.
 def myMutation(individual):
     ### Divide individual's chromosome into chunks that represent each layer.
-    chunks = divide_chunks(individual, 9)
+    chunks = divide_chunks(individual, 10)
 
     ### Start a list for mutated individuals.
     mutated_individual = []
@@ -140,10 +142,11 @@ def myMutation(individual):
     ### Iterate over individuals.
     for chunk in chunks:
         ### Mutate layer type.
-        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 2, .5)
+        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 5, .5)
 
-        ### Mutate number of nodes.
-        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, .5)
+        ### Mutate number of output_dimensionality.
+        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, .5)
+        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, .5)
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
         chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, .5)
@@ -159,23 +162,27 @@ def myMutation(individual):
 
         ### Mutate activation type.
         chunk[4] = tools.mutUniformInt([ chunk[4] ], 0, 10, .5)
- 
+
+        ### Mutate strides.
+        chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, .5)
+
         ### Mutate use bias.
-        chunk[5] = tools.mutUniformInt([ chunk[5] ], 0, 1, .5)
+        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 1, .5)
 
         ### Mutate bias initializer.
-        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 10, .5)
+        chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 10, .5)
 
         ### Mutate bias regularizer.
-        chunk[7] = tools.mutGaussian([ chunk[7] ], chunk[7], .1, .5)
+        chunk[8] = tools.mutGaussian([ chunk[8] ], chunk[9], .1, .5)
 
         ### Mutate activity regularizer.
-        chunk[8] = tools.mutGaussian([ chunk[8] ], chunk[8], .1, .5)
+        chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[10], .1, .5)
 
         ### Update the chunk (layer).
         chunk = [ chunk[0][0][0], chunk[1][0][0], chunk[2][0][0],
                   chunk[3][0][0], chunk[4][0][0], chunk[5][0][0],
-                  chunk[6][0][0], chunk[7][0][0], chunk[8][0][0] ]
+                  chunk[6][0][0], chunk[7][0][0], chunk[8][0][0],
+                  chunk[9][0][0]  ]
 
         ### Add chunk (layer) to the mutated individual.
         mutated_individual += chunk
@@ -190,7 +197,7 @@ def myMutation(individual):
 
 def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
     ### Divide chromosome into chunks for each layer.
-    chunks = divide_chunks(individual, 9)
+    chunks = divide_chunks(individual, 10)
 
     ### Set previous x and y dimensions equal to the original x and y dimensions.
     ### (the x and y dimensions of the data set before the first layer.)
@@ -209,10 +216,11 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
         kernel_y = chunk[3]
 
         ### Check if the kernal size is greater than the dimension size. The kernel size
-        ### needs to be less than or equal to the dimension size minus 1. If the kernal
-        ### size is too large, generate a random number between 0 and 1 and take the floor
-        ### of that number times the dimension size. This gives a kernal size that is
-        ### less than the dimension size.
+        ### needs to be less than or equal to the dimension size minus 1 (for stride = 1).
+        ### output = input - (kernel - 1).
+        ### If the kernal size is too large, generate a random number between 0 and 1 and
+        ### take the floor of that number times the dimension size. This gives a kernal size
+        ### that is less than the dimension size.
 
         if kernel_x > previous_x_dimension - 1:
             kernel_x_ratio = np.random.uniform(0, 1)
@@ -263,8 +271,8 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
 
 def layer():                            ### Return random integer between 0 and 2 for layer type.
-    return np.random.randint(3)
-def nodes():                            ### Return random integer between 2 and 100 for number of nodes for layer.
+    return np.random.randint(6)
+def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     #return np.random.randint(2, 101)
     return np.random.randint(2, 11)
     #return 2
@@ -282,6 +290,8 @@ def bias_reg():                         ### Return random float between 0 and 1 
     return np.random.uniform()
 def act_reg():                          ### Return random float between 0 and 1 for activation regularizer for layer.
     return np.random.uniform()
+def strides():
+    return np.random.randint(1,11)
 
 ### Extract training data.
 with open('../x_train.pkl', 'rb') as pkl_file:
@@ -292,6 +302,9 @@ original_x_dimension = x_train.shape[1]
 original_y_dimension = x_train.shape[2]
 previous_x_dimension = original_x_dimension
 previous_y_dimension = original_y_dimension
+
+print(previous_x_dimension)
+print(previous_y_dimension)
 
 ### Not sure what this does besides setting the weights for each objective function.
 creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
@@ -306,9 +319,10 @@ toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Indiv
 ### Iterate over the number of layers and append to string to be executed.
 for n in range(num_layers):
     layer_str = 'layer_' + str(n)
-    nodes_str = 'nodes_' + str(n)
+    output_dimensionality_str = 'output_dimensionality_' + str(n)
     kernel_x_str = 'kernel_x_' + str(n)
     kernel_y_str = 'kerner_y_' + str(n)
+    strides_str = 'strides_' + str(n)
     act_str = 'act_' + str(n)
     use_bias_str = 'use_bias_' + str(n)
     bias_init_str = 'bias_init_' + str(n)
@@ -316,7 +330,7 @@ for n in range(num_layers):
     act_reg_str = 'act_reg_' + str(n)
 
     toolbox.register(layer_str, layer)
-    toolbox.register(nodes_str, nodes)
+    toolbox.register(output_dimensionality_str, output_dimensionality)
 
     kernel_x_ratio = np.random.uniform(0, 1)
     kernel_x = int(math.floor(kernel_x_ratio * previous_x_dimension))
@@ -341,12 +355,13 @@ for n in range(num_layers):
     toolbox.register(kernel_x_str, get_kernel_x, kernel_x)
     toolbox.register(kernel_y_str, get_kernel_y, kernel_y)
     toolbox.register(act_str, act)
+    toolbox.register(strides_str, strides)
     toolbox.register(use_bias_str, use_bias)
     toolbox.register(bias_init_str, bias_init)
     toolbox.register(bias_reg_str, bias_reg)
     toolbox.register(act_reg_str, act_reg)
 
-    toolbox_ind_str += 'toolbox.' + layer_str + ', toolbox.' + nodes_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + act_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
+    toolbox_ind_str += 'toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + act_str + ', toolbox.' + strides_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
     if n != num_layers-1:
         toolbox_ind_str += ", "
 
@@ -365,9 +380,13 @@ toolbox.register('evaluate', evaluate)
 def main():
     ### Population size.
     population_size = 32
+    print('population_size: ', population_size)
+    #population_size = 4
 
     ### Number of individuals (parents) to clone for the next generation.
     selection_size = 16
+    #selection_size = 2
+    print('selection_size: ', selection_size)
 
     ### Number of individuals made through crossing of selected parents.
     cross_over_size = population_size - selection_size
@@ -379,7 +398,10 @@ def main():
 
     ### Set mutation probability and number of generations.
     MUTPB = .5
-    NGEN = 32
+    print('MUTPB: ', MUTPB)
+    NGEN = 100
+    print('NGEN: ', NGEN)
+    #NGEN = 1
 
     ### Evaluate fitness of initial population.
     fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
