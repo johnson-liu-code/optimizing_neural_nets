@@ -16,11 +16,26 @@ from deap import tools
 from genotype_to_phenotype import get_phenotype
 from functions.divide_chunks import divide_chunks
 
+with open('inFile.txt', 'r') as fil:
+    lines = fil.readlines()
+
+num_layers = int(lines[0].split()[2])
+population_size = int(lines[1].split()[2])
+selection_size = int(lines[2].split()[2])
+MUTPB = float(lines[3].split()[2])
+NGEN = int(lines[4].split()[2])
+batch_size = int(lines[5].split()[2])
+num_classes = int(lines[6].split()[2])
+epochs = int(lines[7].split()[2])
+
+
+#print(num_layers, population_size, selection_size, MUTPB, NGEN)
+
 
 ### Set number of layers.
-num_layers = 20
+#num_layers = 20
+#num_layers = 1
 print('num_layers: ', num_layers)
-#num_layers = 10
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -77,6 +92,9 @@ def evaluate(individual):
     temp_file_name = neural_net_directory_name + '{0}{1:02d}{2:02d}_{3:06d}_neural_net.py'.format(year, month, day, next_file_number)    
 
     with open(temp_file_name, 'w') as tempfile:
+        tempfile.write( 'batch_size = ' + str(batch_size) )
+        tempfile.write( 'num_classes = ' + str(num_classes) )
+        tempfile.write( 'epochs = ' + str(epochs) )
         ### Write top wrapper to file.
         for line in top_lines:
             tempfile.write( line.split('\n')[0] + '\n')
@@ -116,7 +134,8 @@ def evaluate(individual):
     out = proc.communicate()[0].decode('utf-8')
 
     ### Compute loss, memory, and cpu usage fitnesses.
-    inverse_loss = 1./float(out.upper().split()[-7])
+    #inverse_loss = 1./float(out.upper().split()[-7])
+    inverse_loss = float(out.upper().split()[-7])
     inverse_mem = 1./float(out.upper().split()[-3])
     inverse_cpu = 1./float(out.upper().split()[-1])
 
@@ -142,17 +161,18 @@ def myMutation(individual):
     ### Iterate over individuals.
     for chunk in chunks:
         ### Mutate layer type.
-        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 5, .5)
+        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 5, MUTPB)
 
         ### Mutate number of output_dimensionality.
-        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, .5)
-        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, .5)
+        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, MUTPB)
+        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, MUTPB)
+        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 100, MUTPB)
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
-        chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, .5)
+        chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, MUTPB)
 
         ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
-        chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, .5)
+        chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, MUTPB)
 
         ### Make the ratios positive.
         if chunk[2][0][0] < 0:
@@ -161,22 +181,22 @@ def myMutation(individual):
             chunk[3][0][0] += 1
 
         ### Mutate activation type.
-        chunk[4] = tools.mutUniformInt([ chunk[4] ], 0, 10, .5)
+        chunk[4] = tools.mutUniformInt([ chunk[4] ], 0, 10, MUTPB)
 
         ### Mutate strides.
-        chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, .5)
+        chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, MUTPB)
 
         ### Mutate use bias.
-        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 1, .5)
+        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 1, MUTPB)
 
         ### Mutate bias initializer.
-        chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 10, .5)
+        chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 10, MUTPB)
 
         ### Mutate bias regularizer.
-        chunk[8] = tools.mutGaussian([ chunk[8] ], chunk[9], .1, .5)
+        chunk[8] = tools.mutGaussian([ chunk[8] ], chunk[8], .1, MUTPB)
 
         ### Mutate activity regularizer.
-        chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[10], .1, .5)
+        chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[9], .1, MUTPB)
 
         ### Update the chunk (layer).
         chunk = [ chunk[0][0][0], chunk[1][0][0], chunk[2][0][0],
@@ -273,8 +293,8 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 def layer():                            ### Return random integer between 0 and 2 for layer type.
     return np.random.randint(6)
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
-    #return np.random.randint(2, 101)
-    return np.random.randint(2, 11)
+    return np.random.randint(2, 101)
+    #return np.random.randint(2, 11)
     #return 2
 def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (not sure why I did this).
     return kernel_x
@@ -303,8 +323,8 @@ original_y_dimension = x_train.shape[2]
 previous_x_dimension = original_x_dimension
 previous_y_dimension = original_y_dimension
 
-print(previous_x_dimension)
-print(previous_y_dimension)
+#print(previous_x_dimension)
+#print(previous_y_dimension)
 
 ### Not sure what this does besides setting the weights for each objective function.
 creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
@@ -379,14 +399,14 @@ toolbox.register('evaluate', evaluate)
 
 def main():
     ### Population size.
-    population_size = 32
-    print('population_size: ', population_size)
+    #population_size = 32
     #population_size = 4
+    #print('population_size: ', population_size)
 
     ### Number of individuals (parents) to clone for the next generation.
-    selection_size = 16
+    #selection_size = 16
     #selection_size = 2
-    print('selection_size: ', selection_size)
+    #print('selection_size: ', selection_size)
 
     ### Number of individuals made through crossing of selected parents.
     cross_over_size = population_size - selection_size
@@ -396,12 +416,15 @@ def main():
     ### Set up population.
     pop = toolbox.population(n=population_size)
 
+    print('population_size: ', population_size)
+    print('selection_size: ', selection_size)
+
     ### Set mutation probability and number of generations.
-    MUTPB = .5
+    #MUTPB = .2
     print('MUTPB: ', MUTPB)
-    NGEN = 100
-    print('NGEN: ', NGEN)
+    #NGEN = 100
     #NGEN = 1
+    print('NGEN: ', NGEN)
 
     ### Evaluate fitness of initial population.
     fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
