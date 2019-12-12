@@ -17,9 +17,10 @@ from genotype_to_phenotype import get_phenotype
 from functions.divide_chunks import divide_chunks
 
 with open('inFile.txt', 'r') as fil:
+#with open('test_inFile.txt', 'r') as fil:
     lines = fil.readlines()
 
-num_layers = int(lines[0].split()[2])
+max_num_layers = int(lines[0].split()[2])
 population_size = int(lines[1].split()[2])
 selection_size = int(lines[2].split()[2])
 MUTPB = float(lines[3].split()[2])
@@ -29,13 +30,13 @@ num_classes = int(lines[6].split()[2])
 epochs = int(lines[7].split()[2])
 
 
-#print(num_layers, population_size, selection_size, MUTPB, NGEN)
+#print(max_num_layers, population_size, selection_size, MUTPB, NGEN)
 
 
 ### Set number of layers.
-#num_layers = 20
-#num_layers = 1
-print('num_layers: ', num_layers)
+#max_num_layers = 20
+#max_num_layers = 1
+print('max_num_layers: ', max_num_layers)
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -69,13 +70,20 @@ if not os.path.isdir(data_dir_number_name):
 
 ### Get the fitness of an individual.
 def evaluate(individual):
-    x_chunks = divide_chunks(individual, 10)    # There are 10 genes within the chromosome.
+    individual_without_first_element = individual[1:]
+    #x_chunks = divide_chunks(individual, 10)    # There are 10 genes within each chromosome (layer).
+    x_chunks = divide_chunks(individual_without_first_element)
+
+    max_num_layers = individual[0]
 
     ### Convert genotype to phenotype.
     phenotype_list = []
-    for chunk in x_chunks:
+    #for chunk in x_chunks:
+    for m in range(max_num_layers):
+        #print(chunk)
+        chunk = x_chunks[m]
         phenotype = get_phenotype(chunk)
-        phenotype_list.append(phenotype)
+        phenotype_list.append(phenotype)        # List of chromosomes in text format.
 
     neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
     if not os.path.isdir(neural_net_directory_name):
@@ -92,16 +100,16 @@ def evaluate(individual):
     temp_file_name = neural_net_directory_name + '{0}{1:02d}{2:02d}_{3:06d}_neural_net.py'.format(year, month, day, next_file_number)    
 
     with open(temp_file_name, 'w') as tempfile:
-        tempfile.write( 'batch_size = ' + str(batch_size) )
-        tempfile.write( 'num_classes = ' + str(num_classes) )
-        tempfile.write( 'epochs = ' + str(epochs) )
+        tempfile.write( 'batch_size = ' + str(batch_size) + '\n')
+        tempfile.write( 'num_classes = ' + str(num_classes) + '\n')
+        tempfile.write( 'epochs = ' + str(epochs) + '\n')
         ### Write top wrapper to file.
         for line in top_lines:
             tempfile.write( line.split('\n')[0] + '\n')
 
         ### Randomly choose the number of output_dimensionality in the first layer.
         #number_of_first_layer_output_dimensionality = np.random.randint(2, 100)
-        number_of_first_layer_output_dimensionality = 2
+        number_of_first_layer_output_dimensionality = 10
 
         ### Write first layer to file.
         tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_output_dimensionality) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
@@ -133,9 +141,9 @@ def evaluate(individual):
     ### Capture the output of the job.
     out = proc.communicate()[0].decode('utf-8')
 
-    ### Compute loss, memory, and cpu usage fitnesses.
-    #inverse_loss = 1./float(out.upper().split()[-7])
-    inverse_loss = float(out.upper().split()[-7])
+    ### Compute inverse loss, inverse memory, and inverse cpu usage fitnesses.
+    inverse_loss = 1./float(out.upper().split()[-7])
+    #loss = float(out.upper().split()[-7])
     inverse_mem = 1./float(out.upper().split()[-3])
     inverse_cpu = 1./float(out.upper().split()[-1])
 
@@ -144,6 +152,7 @@ def evaluate(individual):
 
     ### Collect the fitness values.
     fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
+    #fitness = ( accuracy, loss, inverse_duration, inverse_mem, inverse_cpu )
     
     #fitness = [1, 1, 1, 1, 1]
 
@@ -337,7 +346,7 @@ toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Indiv
 
 
 ### Iterate over the number of layers and append to string to be executed.
-for n in range(num_layers):
+for n in range(max_num_layers):
     layer_str = 'layer_' + str(n)
     output_dimensionality_str = 'output_dimensionality_' + str(n)
     kernel_x_str = 'kernel_x_' + str(n)
@@ -382,7 +391,7 @@ for n in range(num_layers):
     toolbox.register(act_reg_str, act_reg)
 
     toolbox_ind_str += 'toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + act_str + ', toolbox.' + strides_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
-    if n != num_layers-1:
+    if n != max_num_layers-1:
         toolbox_ind_str += ", "
 
 toolbox_ind_str += "), n=1)"
@@ -416,6 +425,9 @@ def main():
     ### Set up population.
     pop = toolbox.population(n=population_size)
 
+    for p in pop:
+        print(p)
+
     print('population_size: ', population_size)
     print('selection_size: ', selection_size)
 
@@ -448,6 +460,8 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
 
+
+    '''
     ### Iterate over the generations.
     for g in range(1, NGEN):
         ### Select the parents.
@@ -503,5 +517,6 @@ def main():
 
     ### Return the final population and final fitnesses.
     return pop, fitnesses
+    '''
 
 pop, fitnesses = main()
