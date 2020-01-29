@@ -53,9 +53,9 @@ def get_phenotype(chromosome):
     if chromosome[0] in layers_needing_strides:
         if first_parameter == False:
             first_parameter = True
-            phenotype += "strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ") "
+            phenotype += "strides=(" + str(chromosome[4]) + "," + str(chromosome[4]) + ") "
         else:
-            phenotype += ", strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ") "
+            phenotype += ", strides=(" + str(chromosome[4]) + "," + str(chromosome[4]) + ") "
 
     if chromosome[0] in layers_with_pooling:
         if first_parameter == False:
@@ -72,7 +72,7 @@ def get_phenotype(chromosome):
             phenotype += ", padding='same'"
 
     if chromosome[0] in layers_with_activation:
-        phenotype += ", " + activation_type[chromosome[4]]          # activation type
+        phenotype += ", " + activation_type[chromosome[5]]          # activation type
         phenotype += ", " + use_bias[chromosome[6]]                 # use bias
         phenotype += ", " + bias_initializer_type[chromosome[7]]    # bias initializer
         phenotype += ", " + regularizer_type(0, chromosome[8])      # bias regularizer
@@ -83,16 +83,15 @@ def get_phenotype(chromosome):
     return phenotype
 
 #  0: layer type				0:5
-#  1: number of output_dimensionality
+#  1: output_dimensionality
 #  2: kernel x
 #  3: kernel y
-#  4: activation type				0:11
-#  5: use bias?					0 or 1
-#  6: bias initializer				0:10
-#  7: bias regularizer				random number between 0 and 1
-#  8: activation regularizer			random number between 0 and 1
-#  9: x_strides
-# 10: y_strides
+#  4: strides
+#  5: activation type				0:11
+#  6: use bias?					0 or 1
+#  7: bias initializer				0:10
+#  8: bias regularizer				random number between 0 and 1
+#  9: activation regularizer			random number between 0 and 1
 
 '''
 layer = np.random.randint(4)
