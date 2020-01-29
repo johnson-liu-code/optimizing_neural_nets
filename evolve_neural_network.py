@@ -70,18 +70,18 @@ if not os.path.isdir(data_dir_number_name):
 
 ### Get the fitness of an individual.
 def evaluate(individual):
+    print('individual', individual)
+    num_of_layers = individual[0]
     individual_without_first_element = individual[1:]
     #x_chunks = divide_chunks(individual, 10)    # There are 10 genes within each chromosome (layer).
-    x_chunks = divide_chunks(individual_without_first_element)
-
-    max_num_layers = individual[0]
+    x_chunks = divide_chunks(individual_without_first_element, 10)
+    print('x_chunks: ', x_chunks)
 
     ### Convert genotype to phenotype.
     phenotype_list = []
     #for chunk in x_chunks:
-    for m in range(max_num_layers):
-        #print(chunk)
-        chunk = x_chunks[m]
+    for n in range(num_of_layers):
+        chunk = x_chunks[n]
         phenotype = get_phenotype(chunk)
         phenotype_list.append(phenotype)        # List of chromosomes in text format.
 
@@ -162,10 +162,15 @@ def evaluate(individual):
 ### Define how individuals mutate.
 def myMutation(individual):
     ### Divide individual's chromosome into chunks that represent each layer.
-    chunks = divide_chunks(individual, 10)
+    num_of_layers = individual[0]
+    individual_without_first_element = individual[1:] 
+    chunks = divide_chunks(individual_without_first_element, 10)
+    
+    mut_num_of_layers = tools.mutUniformInt([ num_of_layers ], 1, max_num_layers, MUTPB)
 
     ### Start a list for mutated individuals.
     mutated_individual = []
+    mutated_individual += [ mut_num_of_layers ]
 
     ### Iterate over individuals.
     for chunk in chunks:
@@ -175,7 +180,7 @@ def myMutation(individual):
         ### Mutate number of output_dimensionality.
         #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, MUTPB)
         #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, MUTPB)
-        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 100, MUTPB)
+        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, MUTPB)
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
         chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, MUTPB)
@@ -226,7 +231,10 @@ def myMutation(individual):
 
 def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
     ### Divide chromosome into chunks for each layer.
-    chunks = divide_chunks(individual, 10)
+    #chunks = divide_chunks(individual, 10)
+    num_of_layers = individual[0]
+    individual_without_first_element = individual[1:] 
+    chunks = divide_chunks(individual_without_first_element, 10)
 
     ### Set previous x and y dimensions equal to the original x and y dimensions.
     ### (the x and y dimensions of the data set before the first layer.)
@@ -237,6 +245,7 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
     ### modified if the kernal size is invalid. Saves the unmodified individual if the kernal
     ### size is valid.)
     modified_individual = []
+    modified_individual += [ num_of_layers ]
 
     ### Iterate over the layers.
     for chunk in chunks:
@@ -298,7 +307,8 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
     return modified_individual
 
-
+def num_layers():
+    return np.random.randint(1, max_num_layers+1 )
 def layer():                            ### Return random integer between 0 and 2 for layer type.
     return np.random.randint(6)
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
@@ -342,8 +352,12 @@ creator.create('Individual', list, fitness=creator.FitnessMax)
 toolbox = base.Toolbox()
 ### Create a string of a command to be executed to register a 'type' of individual.
 ### The 'type' of individual depends on how many layers the individual has.
-toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, ("
+toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, (toolbox."
 
+num_layers_str = "num_layers"
+toolbox.register(num_layers_str, num_layers)
+
+toolbox_ind_str += num_layers_str + ", "
 
 ### Iterate over the number of layers and append to string to be executed.
 for n in range(max_num_layers):
@@ -357,7 +371,7 @@ for n in range(max_num_layers):
     bias_init_str = 'bias_init_' + str(n)
     bias_reg_str = 'bias_reg_' + str(n)
     act_reg_str = 'act_reg_' + str(n)
-
+    
     toolbox.register(layer_str, layer)
     toolbox.register(output_dimensionality_str, output_dimensionality)
 
@@ -424,7 +438,7 @@ def main():
 
     ### Set up population.
     pop = toolbox.population(n=population_size)
-
+    print('population')
     for p in pop:
         print(p)
 
@@ -460,8 +474,6 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
 
-
-    '''
     ### Iterate over the generations.
     for g in range(1, NGEN):
         ### Select the parents.
@@ -517,6 +529,5 @@ def main():
 
     ### Return the final population and final fitnesses.
     return pop, fitnesses
-    '''
 
 pop, fitnesses = main()

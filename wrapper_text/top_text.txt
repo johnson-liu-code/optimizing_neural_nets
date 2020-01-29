@@ -5,6 +5,7 @@ from keras.layers import Dense, Flatten, Conv2D, SeparableConv2D, DepthwiseConv2
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras import regularizers
 from keras import metrics
+from keras import callbacks
 from apscheduler.schedulers.background import BackgroundScheduler
 import pickle
 import psutil
@@ -31,9 +32,26 @@ pkl_file = open('../x_train.pkl', 'rb')
 x_train = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
 
+############################################################
+x_data_len = len(x_train)
+#end = int(.2*x_data_len)
+#x_train_train = x_train[0:end]
+#x_train_valid = x_train[end:]
+#print(x_data_len)
+x_train_train = x_train[0:10000]
+x_train_valid = x_train[10000:20000]
+############################################################
+
 pkl_file = open('../y_train.pkl', 'rb')
 y_train = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
+
+############################################################
+#y_train_train = y_train[0:end]
+#y_train_valid = y_train[end:]
+y_train_train = y_train[0:10000]
+y_train_valid = y_train[10000:20000]
+############################################################
 
 pkl_file = open('../x_test.pkl', 'rb')
 x_test = pickle.load(pkl_file, encoding='latin1')
@@ -44,7 +62,8 @@ y_test = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
 
 # Convert class vectors to binary class matrices.
-y_train = keras.utils.to_categorical(y_train, num_classes)
+y_train_train = keras.utils.to_categorical(y_train_train, num_classes)
+y_train_valid = keras.utils.to_categorical(y_train_valid, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
 model = Sequential()

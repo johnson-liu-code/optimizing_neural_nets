@@ -31,6 +31,8 @@ def get_phenotype(chromosome):
 
     first_parameter = False
 
+    #print(chromosome[0])
+
     phenotype = "model.add("
     phenotype += layer_type[chromosome[0]] + "("                    # layer type
 
@@ -77,7 +79,7 @@ def get_phenotype(chromosome):
         phenotype += ", " + regularizer_type(1, chromosome[9])      # activation regularizer
 
     phenotype = phenotype + "))"
-
+    #print(phenotype)
     return phenotype
 
 #  0: layer type				0:5
