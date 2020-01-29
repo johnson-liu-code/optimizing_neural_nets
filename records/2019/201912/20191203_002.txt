@@ -1,0 +1,15 @@
+num_layers:  20
+Setting up population.
+
+population_size:  32
+selection_size:  16
+MUTPB:  0.2
+NGEN:  100
+Traceback (most recent call last):
+  File "evolve_neural_network.py", line 508, in <module>
+    pop, fitnesses = main()
+  File "evolve_neural_network.py", line 431, in main
+    fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
+  File "evolve_neural_network.py", line 137, in evaluate
+    inverse_loss = 1./float(out.upper().split()[-7])
+ValueError: could not convert string to float: '7S'

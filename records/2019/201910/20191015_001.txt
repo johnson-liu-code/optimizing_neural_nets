@@ -1,0 +1,28 @@
+num_layers:  20
+population_size:  32
+selection_size:  16
+Setting up population.
+
+MUTPB:  0.2
+NGEN:  2
+Traceback (most recent call last):
+  File "evolve_neural_network.py", line 497, in <module>
+    
+  File "evolve_neural_network.py", line 442, in main
+    ### Iterate over the generations.
+TypeError: 'str' object cannot be interpreted as an integer
+srun: error: node002: task 0: Exited with exit code 1
+num_layers:  20
+population_size:  32
+selection_size:  16
+Setting up population.
+
+MUTPB:  0.2
+NGEN:  2
+Traceback (most recent call last):
+  File "evolve_neural_network.py", line 497, in <module>
+    
+  File "evolve_neural_network.py", line 442, in main
+    ### Iterate over the generations.
+TypeError: 'str' object cannot be interpreted as an integer
+srun: error: node003: task 1: Exited with exit code 1
