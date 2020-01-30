@@ -28,7 +28,7 @@ scheduler.add_job(get_info, 'interval', seconds=1)
 data_augmentation = True
 
 #load saved data
-pkl_file = open('../x_train.pkl', 'rb')
+pkl_file = open('/exports/home/j_liu21/projects/genetic_algorithms/x_train.pkl', 'rb')
 x_train = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
 
@@ -42,7 +42,7 @@ x_train_train = x_train[0:10000]
 x_train_valid = x_train[10000:20000]
 ############################################################
 
-pkl_file = open('../y_train.pkl', 'rb')
+pkl_file = open('/exports/home/j_liu21/projects/genetic_algorithms/y_train.pkl', 'rb')
 y_train = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
 
@@ -53,11 +53,11 @@ y_train_train = y_train[0:10000]
 y_train_valid = y_train[10000:20000]
 ############################################################
 
-pkl_file = open('../x_test.pkl', 'rb')
+pkl_file = open('/exports/home/j_liu21/projects/genetic_algorithms/x_test.pkl', 'rb')
 x_test = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
 
-pkl_file = open('../y_test.pkl', 'rb')
+pkl_file = open('/exports/home/j_liu21/projects/genetic_algorithms/y_test.pkl', 'rb')
 y_test = pickle.load(pkl_file, encoding='latin1')
 pkl_file.close()
 

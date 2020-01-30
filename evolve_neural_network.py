@@ -71,18 +71,18 @@ if not os.path.isdir(data_dir_number_name):
 ### Get the fitness of an individual.
 def evaluate(individual):
     print('individual', individual)
-    num_of_layers = individual[0]
-    individual_without_first_element = individual[1:]
-    #x_chunks = divide_chunks(individual, 10)    # There are 10 genes within each chromosome (layer).
-    x_chunks = divide_chunks(individual_without_first_element, 10)
+    x_chunks = divide_chunks(individual, 11)    # There are 11 genes within each chromosome (layer).
     print('x_chunks: ', x_chunks)
 
     ### Convert genotype to phenotype.
     phenotype_list = []
     #for chunk in x_chunks:
-    for n in range(num_of_layers):
+    for n in range(len(x_chunks)):
         chunk = x_chunks[n]
-        phenotype = get_phenotype(chunk)
+        if chunk[0] == 1:
+            phenotype = get_phenotype(chunk)
+        else:
+            phenotype = ''
         phenotype_list.append(phenotype)        # List of chromosomes in text format.
 
     neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
@@ -162,61 +162,64 @@ def evaluate(individual):
 ### Define how individuals mutate.
 def myMutation(individual):
     ### Divide individual's chromosome into chunks that represent each layer.
-    num_of_layers = individual[0]
-    individual_without_first_element = individual[1:] 
-    chunks = divide_chunks(individual_without_first_element, 10)
+    #num_of_layers = individual[0]
+    #individual_without_first_element = individual[1:] 
+    chunks = divide_chunks(individual, 11)
     
-    mut_num_of_layers = tools.mutUniformInt([ num_of_layers ], 1, max_num_layers, MUTPB)
+    #mut_num_of_layers = tools.mutUniformInt([ num_of_layers ], 1, max_num_layers, MUTPB)
 
     ### Start a list for mutated individuals.
     mutated_individual = []
-    mutated_individual += [ mut_num_of_layers ]
+    #mutated_individual += [ mut_num_of_layers ]
 
     ### Iterate over individuals.
     for chunk in chunks:
+        ### Mutate chromosome (layer) expression.
+        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 1, MUTPB)
+
         ### Mutate layer type.
-        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 5, MUTPB)
+        chunk[1] = tools.mutUniformInt([ chunk[1] ], 0, 5, MUTPB)
 
         ### Mutate number of output_dimensionality.
-        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 4, MUTPB)
-        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, MUTPB)
-        chunk[1] = tools.mutUniformInt([ chunk[1] ], 2, 10, MUTPB)
+        #chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 4, MUTPB)
+        chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 10, MUTPB)
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
-        chunk[2] = tools.mutGaussian([ chunk[2] ], chunk[2], .1, MUTPB)
-
-        ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
         chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, MUTPB)
 
+        ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
+        chunk[4] = tools.mutGaussian([ chunk[4] ], chunk[4], .1, MUTPB)
+
         ### Make the ratios positive.
-        if chunk[2][0][0] < 0:
-            chunk[2][0][0] += 1
         if chunk[3][0][0] < 0:
             chunk[3][0][0] += 1
-
-        ### Mutate activation type.
-        chunk[4] = tools.mutUniformInt([ chunk[4] ], 0, 10, MUTPB)
+        if chunk[4][0][0] < 0:
+            chunk[4][0][0] += 1
 
         ### Mutate strides.
         chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, MUTPB)
+        print('\n strides: ' + str(chunk[5]) + '\n')
+
+        ### Mutate activation type.
+        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 10, MUTPB)
 
         ### Mutate use bias.
-        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 1, MUTPB)
+        chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 1, MUTPB)
 
         ### Mutate bias initializer.
-        chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 10, MUTPB)
+        chunk[8] = tools.mutUniformInt([ chunk[8] ], 0, 10, MUTPB)
 
         ### Mutate bias regularizer.
-        chunk[8] = tools.mutGaussian([ chunk[8] ], chunk[8], .1, MUTPB)
+        chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[9], .1, MUTPB)
 
         ### Mutate activity regularizer.
-        chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[9], .1, MUTPB)
+        chunk[10] = tools.mutGaussian([ chunk[10] ], chunk[10], .1, MUTPB)
 
         ### Update the chunk (layer).
         chunk = [ chunk[0][0][0], chunk[1][0][0], chunk[2][0][0],
                   chunk[3][0][0], chunk[4][0][0], chunk[5][0][0],
                   chunk[6][0][0], chunk[7][0][0], chunk[8][0][0],
-                  chunk[9][0][0]  ]
+                  chunk[9][0][0], chunk[10][0][0]  ]
 
         ### Add chunk (layer) to the mutated individual.
         mutated_individual += chunk
@@ -232,9 +235,7 @@ def myMutation(individual):
 def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
     ### Divide chromosome into chunks for each layer.
     #chunks = divide_chunks(individual, 10)
-    num_of_layers = individual[0]
-    individual_without_first_element = individual[1:] 
-    chunks = divide_chunks(individual_without_first_element, 10)
+    chunks = divide_chunks(individual, 11)
 
     ### Set previous x and y dimensions equal to the original x and y dimensions.
     ### (the x and y dimensions of the data set before the first layer.)
@@ -245,13 +246,13 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
     ### modified if the kernal size is invalid. Saves the unmodified individual if the kernal
     ### size is valid.)
     modified_individual = []
-    modified_individual += [ num_of_layers ]
+    #modified_individual += [ num_of_layers ]
 
     ### Iterate over the layers.
     for chunk in chunks:
         ### Get the kernal size for the x and y dimensions.
-        kernel_x = chunk[2]
-        kernel_y = chunk[3]
+        kernel_x = chunk[3]
+        kernel_y = chunk[4]
 
         ### Check if the kernal size is greater than the dimension size. The kernel size
         ### needs to be less than or equal to the dimension size minus 1 (for stride = 1).
@@ -296,8 +297,8 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
         if kernel_y < 1:
             kernel_y = 1
 
-        chunk[2] = int(math.floor(kernel_x))
-        chunk[3] = int(math.floor(kernel_y))
+        chunk[3] = int(math.floor(kernel_x))
+        chunk[4] = int(math.floor(kernel_y))
 
         ### Save modified chunk to the new chromosome.
         modified_individual += chunk
@@ -307,8 +308,10 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
     return modified_individual
 
-def num_layers():
-    return np.random.randint(1, max_num_layers+1 )
+#def num_layers():
+#    return np.random.randint(1, max_num_layers+1 )
+def use_layer():                        ### Return 0 (skip layer) or 1 (use layer).
+    return np.random.randint(0, 2)
 def layer():                            ### Return random integer between 0 and 2 for layer type.
     return np.random.randint(6)
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
@@ -319,6 +322,8 @@ def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (
     return kernel_x
 def get_kernel_y(kernel_y):             ### Return kernel size for y dimension (not sure why I did this).
     return kernel_y
+def strides():
+    return np.random.randint(1,11)
 def act():                              ### Return random integer between 0 and 10 for layer activation type.
     return np.random.randint(11)
 def use_bias():                         ### Return random integer between 0 and 1 for use_bias = True or False.
@@ -329,8 +334,6 @@ def bias_reg():                         ### Return random float between 0 and 1 
     return np.random.uniform()
 def act_reg():                          ### Return random float between 0 and 1 for activation regularizer for layer.
     return np.random.uniform()
-def strides():
-    return np.random.randint(1,11)
 
 ### Extract training data.
 with open('../x_train.pkl', 'rb') as pkl_file:
@@ -352,15 +355,11 @@ creator.create('Individual', list, fitness=creator.FitnessMax)
 toolbox = base.Toolbox()
 ### Create a string of a command to be executed to register a 'type' of individual.
 ### The 'type' of individual depends on how many layers the individual has.
-toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, (toolbox."
-
-num_layers_str = "num_layers"
-toolbox.register(num_layers_str, num_layers)
-
-toolbox_ind_str += num_layers_str + ", "
+toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, ("
 
 ### Iterate over the number of layers and append to string to be executed.
 for n in range(max_num_layers):
+    use_layer_str = 'use_layer_' + str(n)
     layer_str = 'layer_' + str(n)
     output_dimensionality_str = 'output_dimensionality_' + str(n)
     kernel_x_str = 'kernel_x_' + str(n)
@@ -372,6 +371,7 @@ for n in range(max_num_layers):
     bias_reg_str = 'bias_reg_' + str(n)
     act_reg_str = 'act_reg_' + str(n)
     
+    toolbox.register(use_layer_str, use_layer)
     toolbox.register(layer_str, layer)
     toolbox.register(output_dimensionality_str, output_dimensionality)
 
@@ -404,7 +404,7 @@ for n in range(max_num_layers):
     toolbox.register(bias_reg_str, bias_reg)
     toolbox.register(act_reg_str, act_reg)
 
-    toolbox_ind_str += 'toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + act_str + ', toolbox.' + strides_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
+    toolbox_ind_str += 'toolbox.' + use_layer_str + ', toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + strides_str + ', toolbox.' + act_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
     if n != max_num_layers-1:
         toolbox_ind_str += ", "
 
@@ -474,6 +474,7 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
 
+    '''
     ### Iterate over the generations.
     for g in range(1, NGEN):
         ### Select the parents.
@@ -526,6 +527,8 @@ def main():
         generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_fitness.pkl'.format(year, month, day, next_dir_number, g)
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
+
+    '''
 
     ### Return the final population and final fitnesses.
     return pop, fitnesses

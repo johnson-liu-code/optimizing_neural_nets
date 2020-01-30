@@ -34,64 +34,65 @@ def get_phenotype(chromosome):
     #print(chromosome[0])
 
     phenotype = "model.add("
-    phenotype += layer_type[chromosome[0]] + "("                    # layer type
+    phenotype += layer_type[chromosome[1]] + "("                    # layer type
 
-    if chromosome[0] in layers_with_dimensionality:
+    if chromosome[1] in layers_with_dimensionality:
         if first_parameter == False:
             first_parameter = True
-            phenotype += str(chromosome[1])
+            phenotype += str(chromosome[2])
         else:
-            phenotype += ", " + str(chromosome[1])                             # number of output_dimensionality
+            phenotype += ", " + str(chromosome[2])                             # number of output_dimensionality
 
-    if chromosome[0] in layers_with_kernel:
+    if chromosome[1] in layers_with_kernel:
         if first_parameter == False:
             first_parameter = True
-            phenotype += "(" + str(chromosome[2]) + ", " + str(chromosome[3]) + ")" # kernel x size and kernel y size
+            phenotype += "(" + str(chromosome[3]) + ", " + str(chromosome[4]) + ")" # kernel x size and kernel y size
         else:
-            phenotype += ", (" + str(chromosome[2]) + ", " + str(chromosome[3]) + ")" # kernel x size and kernel y size
+            phenotype += ", (" + str(chromosome[3]) + ", " + str(chromosome[4]) + ")" # kernel x size and kernel y size
 
-    if chromosome[0] in layers_needing_strides:
+    if chromosome[1] in layers_needing_strides:
         if first_parameter == False:
             first_parameter = True
-            phenotype += "strides=(" + str(chromosome[4]) + "," + str(chromosome[4]) + ") "
+            phenotype += "strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ") "
         else:
-            phenotype += ", strides=(" + str(chromosome[4]) + "," + str(chromosome[4]) + ") "
+            phenotype += ", strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ") "
 
-    if chromosome[0] in layers_with_pooling:
+    if chromosome[1] in layers_with_pooling:
         if first_parameter == False:
             first_parameter = True
             phenotype += "pool_size = (1, 1)"
         else:
             phenotype += ", pool_size = (1, 1)"
 
-    if chromosome[0] in layers_with_padding:
+    if chromosome[1] in layers_with_padding:
         if first_parameter == False:
             first_parameter = True
             phenotype += " padding='same'"
         else:
             phenotype += ", padding='same'"
 
-    if chromosome[0] in layers_with_activation:
-        phenotype += ", " + activation_type[chromosome[5]]          # activation type
-        phenotype += ", " + use_bias[chromosome[6]]                 # use bias
-        phenotype += ", " + bias_initializer_type[chromosome[7]]    # bias initializer
-        phenotype += ", " + regularizer_type(0, chromosome[8])      # bias regularizer
-        phenotype += ", " + regularizer_type(1, chromosome[9])      # activation regularizer
+    if chromosome[1] in layers_with_activation:
+        phenotype += ", " + activation_type[chromosome[6]]          # activation type
+        phenotype += ", " + use_bias[chromosome[7]]                 # use bias
+        phenotype += ", " + bias_initializer_type[chromosome[8]]    # bias initializer
+        phenotype += ", " + regularizer_type(0, chromosome[9])      # bias regularizer
+        phenotype += ", " + regularizer_type(1, chromosome[10])      # activation regularizer
 
     phenotype = phenotype + "))"
     #print(phenotype)
     return phenotype
 
-#  0: layer type				0:5
-#  1: output_dimensionality
-#  2: kernel x
-#  3: kernel y
-#  4: strides
-#  5: activation type				0:11
-#  6: use bias?					0 or 1
-#  7: bias initializer				0:10
-#  8: bias regularizer				random number between 0 and 1
-#  9: activation regularizer			random number between 0 and 1
+#   0: expression on/off                        0 (skip layer), 1 (use layer)
+#   1: layer type				0:5
+#   2: output_dimensionality
+#   3: kernel x
+#   4: kernel y
+#   5: strides
+#   6: activation type				0:11
+#   7: use bias?				0 or 1
+#   8: bias initializer				0:10
+#   9: bias regularizer				random number between 0 and 1
+#  10: activation regularizer			random number between 0 and 1
 
 '''
 layer = np.random.randint(4)

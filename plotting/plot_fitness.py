@@ -1,13 +1,13 @@
 import os
 import pickle
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
+from running_average import running_avg4
+#import matplotlib
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-
-dir_name = '/exports/home/j_liu21/projects/genetic_algorithms/optimizing_neural_nets/data/2019/201912/20191210/0005/'
+dir_name = '/exports/home/j_liu21/projects/genetic_algorithms/optimizing_neural_nets/data/2019/201912/20191204/0005/'
 generation_directories = os.listdir(dir_name)
 
 max_accuracy_vs_gen = []
@@ -41,6 +41,11 @@ max_inverse_duration_vs_gen = np.array(max_inverse_duration_vs_gen)/max(max_inve
 max_inverse_mem_vs_gen = np.array(max_inverse_mem_vs_gen)/max(max_inverse_mem_vs_gen)
 max_inverse_cpu_vs_gen = np.array(max_inverse_cpu_vs_gen)/max(max_inverse_cpu_vs_gen)
 
+#accuracy_vs_gen = running_avg4(max_accuracy_vs_gen, 200)
+#inverse_loss_vs_gen = running_avg4(max_inverse_loss_vs_gen, 200)
+#inverse_duration_vs_gen = running_avg4(max_inverse_duration_vs_gen, 200)
+#inverse_mem_vs_gen = running_avg4(max_inverse_mem_vs_gen, 200)
+#inverse_cpu_vs_gen = running_avg4(max_inverse_cpu_vs_gen, 200)
 
 #print(max_accuracy_vs_gen)
 
@@ -79,17 +84,22 @@ with open('cpu', 'w') as cpu:
 
 #fig, ax = plt.subplots(3, 2)
 plt.plot(max_accuracy_vs_gen, label = 'accuracy')
-plt.plot(max_inverse_loss_vs_gen, label = 'inverse loss')
-plt.plot(max_inverse_duration_vs_gen, label = 'inverse duration')
-plt.plot(max_inverse_mem_vs_gen, label = 'inverse memory')
-plt.plot(max_inverse_cpu_vs_gen, label = 'inverse cpu usage')
+#plt.plot(accuracy_vs_gen)
+plt.plot(max_inverse_loss_vs_gen, label = 'inverse loss (normalized)')
+#plt.plot(inverse_loss_vs_gen)
+plt.plot(max_inverse_duration_vs_gen, label = 'inverse duration (normalized)')
+#plt.plot(inverse_duration_vs_gen)
+plt.plot(max_inverse_mem_vs_gen, label = 'inverse memory (normalized)')
+#plt.plot(inverse_mem_vs_gen)
+plt.plot(max_inverse_cpu_vs_gen, label = 'inverse cpu usage (normalized)')
+#plt.plot(inverse_cpu_vs_gen)
 
 plt.grid(linestyle = '--')
 
 plt.xlabel('Generation')
-plt.ylabel('Normalized Score')
-plt.legend(loc = 'lower left')
+plt.ylabel('Score')
+plt.legend(loc = 'lower right')
 
-#plt.show()
-plt.savefig('test')
+plt.show()
+#plt.savefig('test')
 
