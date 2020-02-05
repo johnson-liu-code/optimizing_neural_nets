@@ -152,7 +152,7 @@ def evaluate(individual):
 
     ### Collect the fitness values.
     fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-    #fitness = ( accuracy, loss, inverse_duration, inverse_mem, inverse_cpu )
+    #fitness = ( accuracy, inverse_loss )
     
     #fitness = [1, 1, 1, 1, 1]
 
@@ -350,6 +350,7 @@ previous_y_dimension = original_y_dimension
 
 ### Not sure what this does besides setting the weights for each objective function.
 creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
+#creator.create('FitnessMax', base.Fitness, weights=(1., 1.))
 creator.create('Individual', list, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
@@ -417,7 +418,8 @@ exec(toolbox_ind_str)
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 toolbox.register('mate', tools.cxTwoPoint)
 toolbox.register('mutate', myMutation)
-toolbox.register('select', tools.selNSGA2)
+#toolbox.register('select', tools.selNSGA2)
+toolbox.register('select', tools.selTournament, tournsize = 2)
 toolbox.register('evaluate', evaluate)
 
 def main():
@@ -438,6 +440,9 @@ def main():
 
     ### Set up population.
     pop = toolbox.population(n=population_size)
+
+    
+
     print('population')
     for p in pop:
         print(p)
@@ -474,7 +479,7 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
 
-    '''
+
     ### Iterate over the generations.
     for g in range(1, NGEN):
         ### Select the parents.
@@ -528,7 +533,6 @@ def main():
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
 
-    '''
 
     ### Return the final population and final fitnesses.
     return pop, fitnesses
