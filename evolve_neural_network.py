@@ -174,52 +174,93 @@ def myMutation(individual):
 
     ### Iterate over individuals.
     for chunk in chunks:
-        ### Mutate chromosome (layer) expression.
-        chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 1, MUTPB)
+        ### Mutate chromosome (layer) expression. The value is 0 (not expressed) or 1 (expressed).
+        #chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 1, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:        
+            chunk[0] = np.random.randint(2)
 
         ### Mutate layer type.
-        chunk[1] = tools.mutUniformInt([ chunk[1] ], 0, 5, MUTPB)
+        #chunk[1] = tools.mutUniformInt([ chunk[1] ], 0, 5, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[1] = np.random.randint(6)
 
         ### Mutate number of output_dimensionality.
         #chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 4, MUTPB)
-        chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 10, MUTPB)
+        #chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 10, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[2] = np.random.randint(2, 11)
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
-        chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, MUTPB)
+        #chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[3] = np.random.normal(chunk[3], .1)
 
         ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
         chunk[4] = tools.mutGaussian([ chunk[4] ], chunk[4], .1, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[4] = np.random.normal(chunk[4], .1)
 
         ### Make the ratios positive.
-        if chunk[3][0][0] < 0:
-            chunk[3][0][0] += 1
-        if chunk[4][0][0] < 0:
-            chunk[4][0][0] += 1
+        #if chunk[3][0][0] < 0:
+        #    chunk[3][0][0] += 1
+        #if chunk[4][0][0] < 0:
+        #    chunk[4][0][0] += 1
+        if chunk[3] < 0:
+            chunk[3] += 1
+        if chunk[4] < 0:
+            chunk[4] += 1
 
         ### Mutate strides.
-        chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, MUTPB)
-        print('\n strides: ' + str(chunk[5]) + '\n')
+        #chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[5] = np.random.randint(1, 11)
+        #print('\n strides: ' + str(chunk[5]) + '\n')
 
         ### Mutate activation type.
-        chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 10, MUTPB)
+        #chunk[6] = tools.mutUniformInt([ chunk[6] ], 0, 10, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[6] = np.random.randint(0, 11)
 
         ### Mutate use bias.
-        chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 1, MUTPB)
+        #chunk[7] = tools.mutUniformInt([ chunk[7] ], 0, 1, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[7] = np.random.randint(0, 2)
 
         ### Mutate bias initializer.
-        chunk[8] = tools.mutUniformInt([ chunk[8] ], 0, 10, MUTPB)
+        #chunk[8] = tools.mutUniformInt([ chunk[8] ], 0, 10, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[8] = np.random.randint(0, 2)
 
         ### Mutate bias regularizer.
-        chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[9], .1, MUTPB)
+        #chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[9], .1, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[9] = np.random.noraml(chunk[9], .1)
 
         ### Mutate activity regularizer.
-        chunk[10] = tools.mutGaussian([ chunk[10] ], chunk[10], .1, MUTPB)
+        #chunk[10] = tools.mutGaussian([ chunk[10] ], chunk[10], .1, MUTPB)
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[10] = np.random.normal(chunk[10], .1)
 
         ### Update the chunk (layer).
-        chunk = [ chunk[0][0][0], chunk[1][0][0], chunk[2][0][0],
-                  chunk[3][0][0], chunk[4][0][0], chunk[5][0][0],
-                  chunk[6][0][0], chunk[7][0][0], chunk[8][0][0],
-                  chunk[9][0][0], chunk[10][0][0]  ]
+        #chunk = [ chunk[0][0][0], chunk[1][0][0], chunk[2][0][0],
+        #          chunk[3][0][0], chunk[4][0][0], chunk[5][0][0],
+        #          chunk[6][0][0], chunk[7][0][0], chunk[8][0][0],
+        #          chunk[9][0][0], chunk[10][0][0] ]
+        chunk = [ chunk[0], chunk[1], chunk[2], 
+                  chunk[3], chunk[4], chunk[5],
+                  chunk[6], chunk[7], chunk[8],
+                  chunk[9], chunk[10] ]
 
         ### Add chunk (layer) to the mutated individual.
         mutated_individual += chunk
@@ -335,6 +376,28 @@ def bias_reg():                         ### Return random float between 0 and 1 
 def act_reg():                          ### Return random float between 0 and 1 for activation regularizer for layer.
     return np.random.uniform()
 
+'''
+def seed_population(population, seed_file_name):
+    #print(len(population))
+    with open(seed_file_name, 'r') as fil:
+        seed_individuals = fil.readlines()
+    #print(len(seed_individuals))
+    for i, seed in enumerate(seed_individuals):
+        population[i] = list(seed)
+    print(population)
+    return population
+'''
+def seed_population(population, seed_file_name):
+    with open(seed_file_name, 'rb') as fil:
+        seed_individuals = pickle.load(fil)
+    for i, seed in enumerate(seed_individuals):
+        population[i] = seed_individuals[i]
+    
+    #print(population)
+
+    return population
+
+
 ### Extract training data.
 with open('../x_train.pkl', 'rb') as pkl_file:
     x_train = pickle.load(pkl_file, encoding = 'latin1')
@@ -441,11 +504,9 @@ def main():
     ### Set up population.
     pop = toolbox.population(n=population_size)
 
-    
-
-    print('population')
-    for p in pop:
-        print(p)
+    #print('population')
+    #for p in pop:
+    #    print(p)
 
     print('population_size: ', population_size)
     print('selection_size: ', selection_size)
@@ -456,6 +517,11 @@ def main():
     #NGEN = 100
     #NGEN = 1
     print('NGEN: ', NGEN)
+
+    pop = seed_population(pop, 'seed_002_use_this.pkl')
+    #print('population')
+    #for p in pop:
+    #    print(p)
 
     ### Evaluate fitness of initial population.
     fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
@@ -478,7 +544,6 @@ def main():
     generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_fitness.pkl'.format(year, month, day, next_dir_number)
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
-
 
     ### Iterate over the generations.
     for g in range(1, NGEN):
