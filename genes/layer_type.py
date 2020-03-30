@@ -8,7 +8,8 @@ layer_type = {  0: "Dense",
                 2: "SeparableConv2D",
                 3: "DepthwiseConv2D",
                 4: "MaxPooling2D",
-                5: "AveragePooling2D" }
+                5: "AveragePooling2D",
+                6: "Dropout" }
 
 layers_with_padding = [1, 2, 3, 4, 5]
 layers_with_kernel = [1, 2, 3]
@@ -23,4 +24,4 @@ layers_needing_strides = [1, 2, 3, 4, 5]
 # keras.layers.DepthwiseConv2D(kernel_size, strides=(1, 1), padding='valid', depth_multiplier=1, data_format=None, dilation_rate=(1, 1), activation=None, use_bias=True, depthwise_initializer='glorot_uniform', bias_initializer='zeros', depthwise_regularizer=None, bias_regularizer=None, activity_regularizer=None, depthwise_constraint=None, bias_constraint=None)
 # keras.layers.MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None)
 # keras.layers.AveragePooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None)
-
+# keras.layers.Dropout(.2)

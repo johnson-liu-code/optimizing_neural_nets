@@ -1,8 +1,9 @@
-max_num_layers = 20
-population_size = 32
-selection_size = 16
-MUTPB = .2
-NGEN = 5000
+max_num_layers = 2
+population_size = 4
+selection_size = 2
+MUTPB = .4
+NGEN = 2
 batch_size = 100
 num_classes = 10
 epochs = 100
+initial = initial_population/set_001

@@ -28,7 +28,7 @@ NGEN = int(lines[4].split()[2])
 batch_size = int(lines[5].split()[2])
 num_classes = int(lines[6].split()[2])
 epochs = int(lines[7].split()[2])
-
+init_dir = lines[8].split()[2]
 
 #print(max_num_layers, population_size, selection_size, MUTPB, NGEN)
 
@@ -53,8 +53,12 @@ month = today.month
 day = today.day
 
 data_directory_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+
 if not os.path.isdir(data_directory_name):
     os.makedirs(data_directory_name)
+if not os.path.isdir(neural_net_directory_name):
+    os.makedirs(neural_net_directory_name)
 
 if not os.listdir(data_directory_name):
     next_dir_number = 1
@@ -65,98 +69,120 @@ else:
     next_dir_number = last_dir_number + 1
 
 data_dir_number_name = data_directory_name + '{0:04d}/'.format(next_dir_number)
+neural_net_dir_number_name = neural_net_directory_name + '{0:04d}/'.format(next_dir_number)
+
 if not os.path.isdir(data_dir_number_name):
     os.makedirs(data_dir_number_name)
+if not os.path.isdir(neural_net_dir_number_name):
+    os.makedirs(neural_net_dir_number_name)
 
 ### Get the fitness of an individual.
-def evaluate(individual):
-    print('individual', individual)
-    x_chunks = divide_chunks(individual, 11)    # There are 11 genes within each chromosome (layer).
+#def evaluate(individual):
+def evaluate(individual, i, g):
+    print('individual:', individual)
+    x_chunks = divide_chunks(individual, 13)    # There are 13 genes within each chromosome (layer).
     print('x_chunks: ', x_chunks)
 
     ### Convert genotype to phenotype.
     phenotype_list = []
     #for chunk in x_chunks:
-    for n in range(len(x_chunks)):
+    num_layers = len(x_chunks)
+    zero_layers = 0
+    for n in range(num_layers):
         chunk = x_chunks[n]
         if chunk[0] == 1:
             phenotype = get_phenotype(chunk)
+        elif chunk[0] == 2:
+            phenotype = 'model.add(Dropout({}))'.format(chunk[11])
+        elif chunk[0] == 3:
+            phenotype = 'mode.add(Flatten())'
         else:
+            zero_layers += 1
             phenotype = ''
         phenotype_list.append(phenotype)        # List of chromosomes in text format.
 
-    neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
-    if not os.path.isdir(neural_net_directory_name):
-        os.makedirs(neural_net_directory_name)
+    if zero_layers != num_layers:
+        neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
 
-    if not os.listdir(neural_net_directory_name):
-        next_file_number = 1
+        neural_net_generation_dir_name = neural_net_directory_name + 'generation_{0:05d}/'.format(g)
+
+        if not os.path.isdir(neural_net_generation_dir_name):
+            os.makedirs(neural_net_generation_dir_name)
+
+        #if not os.listdir(neural_net_directory_name):
+        #    next_file_number = 1
+
+        #else:
+        #    last_file_name = sorted(os.listdir(neural_net_directory_name))
+        #    last_file_number = int(last_file_name[-1].split('_')[1])
+        #    next_file_number = last_file_number + 1
+
+        temp_file_name = neural_net_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_neural_net.py'.format(year, month, day, i)
+
+        with open(temp_file_name, 'w') as tempfile:
+            tempfile.write( 'batch_size = ' + str(batch_size) + '\n')
+            tempfile.write( 'num_classes = ' + str(num_classes) + '\n')
+            tempfile.write( 'epochs = ' + str(epochs) + '\n')
+            ### Write top wrapper to file.
+            for line in top_lines:
+                tempfile.write( line.split('\n')[0] + '\n')
+
+            ### Randomly choose the number of output_dimensionality in the first layer.
+            #number_of_first_layer_output_dimensionality = np.random.randint(2, 100)
+            #number_of_first_layer_output_dimensionality = 10
+
+            ### Write first layer to file.
+            #tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_output_dimensionality) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
+
+            ### Write phenotype to file.
+            for phenotype in phenotype_list:
+                #print('phenotype: ', phenotype)
+                tempfile.write(phenotype + '\n')
+
+            ### Write bottom wrapper to file.
+            for line in bot_lines:
+                tempfile.write( line.split('\n')[0] + '\n' )
+    
+        ### Save time at which job was started.
+        #start = time.time()
+
+        ### Start the job.
+        #proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', 'python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(['python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        ### Save time at which job ended.
+        #end = time.time()
+
+        ### Compute the runtime of the job.
+        #duration = end-start
+
+        ### Compute the duration fitness based on how long it took to run the job.
+        #inverse_duration = 1./duration
+
+        ### Capture the output of the job.
+        out = proc.communicate()[0].decode('utf-8')
+
+        ### Compute inverse loss, inverse memory, and inverse cpu usage fitnesses.
+        inverse_loss = 1./float(out.upper().split()[-7])
+        #loss = float(out.upper().split()[-7])
+        #inverse_mem = 1./float(out.upper().split()[-3])
+        #inverse_cpu = 1./float(out.upper().split()[-1])
+
+        ### Save the accuracy.
+        accuracy = float(out.upper().split()[-5])
+
+        ### Collect the fitness values.
+        #fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
+        fitness = ( accuracy, inverse_loss )
+
+        #fitness = [1, 1, 1, 1, 1]
+        #fitness = [1, 1]
+
+        ### Return the fitness values.
 
     else:
-        last_file_name = sorted(os.listdir(neural_net_directory_name))
-        last_file_number = int(last_file_name[-1].split('_')[1])
-        next_file_number = last_file_number + 1
+       fitness = [0, 0]
 
-    temp_file_name = neural_net_directory_name + '{0}{1:02d}{2:02d}_{3:06d}_neural_net.py'.format(year, month, day, next_file_number)    
-
-    with open(temp_file_name, 'w') as tempfile:
-        tempfile.write( 'batch_size = ' + str(batch_size) + '\n')
-        tempfile.write( 'num_classes = ' + str(num_classes) + '\n')
-        tempfile.write( 'epochs = ' + str(epochs) + '\n')
-        ### Write top wrapper to file.
-        for line in top_lines:
-            tempfile.write( line.split('\n')[0] + '\n')
-
-        ### Randomly choose the number of output_dimensionality in the first layer.
-        #number_of_first_layer_output_dimensionality = np.random.randint(2, 100)
-        number_of_first_layer_output_dimensionality = 10
-
-        ### Write first layer to file.
-        tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_output_dimensionality) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
-
-        ### Write phenotype to file.
-        for phenotype in phenotype_list:
-            tempfile.write(phenotype + '\n')
-
-        ### Write bottom wrapper to file.
-        for line in bot_lines:
-            tempfile.write( line.split('\n')[0] + '\n' )
-    
-    ### Save time at which job was started.
-    start = time.time()
-
-    ### Start the job.
-    #proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', 'python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc = subprocess.Popen(['python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    ### Save time at which job ended.
-    end = time.time()
-
-    ### Compute the runtime of the job.
-    duration = end-start
-
-    ### Compute the duration fitness based on how long it took to run the job.
-    inverse_duration = 1./duration
-
-    ### Capture the output of the job.
-    out = proc.communicate()[0].decode('utf-8')
-
-    ### Compute inverse loss, inverse memory, and inverse cpu usage fitnesses.
-    inverse_loss = 1./float(out.upper().split()[-7])
-    #loss = float(out.upper().split()[-7])
-    inverse_mem = 1./float(out.upper().split()[-3])
-    inverse_cpu = 1./float(out.upper().split()[-1])
-
-    ### Save the accuracy.
-    accuracy = float(out.upper().split()[-5])
-
-    ### Collect the fitness values.
-    fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-    #fitness = ( accuracy, inverse_loss )
-    
-    #fitness = [1, 1, 1, 1, 1]
-
-    ### Return the fitness values.
     return fitness
 
 ### Define how individuals mutate.
@@ -164,7 +190,7 @@ def myMutation(individual):
     ### Divide individual's chromosome into chunks that represent each layer.
     #num_of_layers = individual[0]
     #individual_without_first_element = individual[1:] 
-    chunks = divide_chunks(individual, 11)
+    chunks = divide_chunks(individual, 13)
     
     #mut_num_of_layers = tools.mutUniformInt([ num_of_layers ], 1, max_num_layers, MUTPB)
 
@@ -175,10 +201,10 @@ def myMutation(individual):
     ### Iterate over individuals.
     for chunk in chunks:
         ### Mutate chromosome (layer) expression. The value is 0 (not expressed) or 1 (expressed).
-        #chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 1, MUTPB)
+        #chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 2, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:        
-            chunk[0] = np.random.randint(2)
+            chunk[0] = np.random.randint(3)
 
         ### Mutate layer type.
         #chunk[1] = tools.mutUniformInt([ chunk[1] ], 0, 5, MUTPB)
@@ -200,10 +226,13 @@ def myMutation(individual):
             chunk[3] = np.random.normal(chunk[3], .1)
 
         ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
-        chunk[4] = tools.mutGaussian([ chunk[4] ], chunk[4], .1, MUTPB)
+        #print('chunk4: ', chunk[4])
+        #chunk[4] = tools.mutGaussian([ chunk[4] ], chunk[4], .1, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
             chunk[4] = np.random.normal(chunk[4], .1)
+
+        #print('chunk4: ', chunk[4])
 
         ### Make the ratios positive.
         #if chunk[3][0][0] < 0:
@@ -212,6 +241,7 @@ def myMutation(individual):
         #    chunk[4][0][0] += 1
         if chunk[3] < 0:
             chunk[3] += 1
+        #print('chunk3: ', chunk[3], ' chunk4: ', chunk[4])
         if chunk[4] < 0:
             chunk[4] += 1
 
@@ -238,13 +268,13 @@ def myMutation(individual):
         #chunk[8] = tools.mutUniformInt([ chunk[8] ], 0, 10, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
-            chunk[8] = np.random.randint(0, 2)
+            chunk[8] = np.random.randint(0, 11)
 
         ### Mutate bias regularizer.
         #chunk[9] = tools.mutGaussian([ chunk[9] ], chunk[9], .1, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
-            chunk[9] = np.random.noraml(chunk[9], .1)
+            chunk[9] = np.random.normal(chunk[9], .1)
 
         ### Mutate activity regularizer.
         #chunk[10] = tools.mutGaussian([ chunk[10] ], chunk[10], .1, MUTPB)
@@ -252,15 +282,29 @@ def myMutation(individual):
         if r <= MUTPB:
             chunk[10] = np.random.normal(chunk[10], .1)
 
+        ### Mutate kernel initializer.
+        r = np.random.uniform(0, 1)
+        if r <= MUTPB:
+            chunk[11] = np.random.randint(0, 11)
+
+        ### Mutate dropout rate.
+        r = np.random.uniform(0,1)
+        if r <= MUTPB:
+            chunk[12] = np.random.normal(chunk[12], .1)
+        if chunk[12] > 1:
+            chunk[12] = .9
+        elif chunk[12] < 0:
+            chunk[12] = 0
+
         ### Update the chunk (layer).
         #chunk = [ chunk[0][0][0], chunk[1][0][0], chunk[2][0][0],
         #          chunk[3][0][0], chunk[4][0][0], chunk[5][0][0],
         #          chunk[6][0][0], chunk[7][0][0], chunk[8][0][0],
         #          chunk[9][0][0], chunk[10][0][0] ]
-        chunk = [ chunk[0], chunk[1], chunk[2], 
-                  chunk[3], chunk[4], chunk[5],
-                  chunk[6], chunk[7], chunk[8],
-                  chunk[9], chunk[10] ]
+        #chunk = [ chunk[0], chunk[1], chunk[2], 
+        #          chunk[3], chunk[4], chunk[5],
+        #          chunk[6], chunk[7], chunk[8],
+        #          chunk[9], chunk[10] ]
 
         ### Add chunk (layer) to the mutated individual.
         mutated_individual += chunk
@@ -276,7 +320,7 @@ def myMutation(individual):
 def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
     ### Divide chromosome into chunks for each layer.
     #chunks = divide_chunks(individual, 10)
-    chunks = divide_chunks(individual, 11)
+    chunks = divide_chunks(individual, 13)
 
     ### Set previous x and y dimensions equal to the original x and y dimensions.
     ### (the x and y dimensions of the data set before the first layer.)
@@ -299,7 +343,7 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
         ### needs to be less than or equal to the dimension size minus 1 (for stride = 1).
         ### output = input - (kernel - 1).
         ### If the kernal size is too large, generate a random number between 0 and 1 and
-        ### take the floor of that number times the dimension size. This gives a kernal size
+        ### take the floor of [that number times the dimension size]. This gives a kernal size
         ### that is less than the dimension size.
 
         if kernel_x > previous_x_dimension - 1:
@@ -356,9 +400,9 @@ def use_layer():                        ### Return 0 (skip layer) or 1 (use laye
 def layer():                            ### Return random integer between 0 and 2 for layer type.
     return np.random.randint(6)
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
-    return np.random.randint(2, 101)
+    #return np.random.randint(2, 101)
     #return np.random.randint(2, 11)
-    #return 2
+    return 2
 def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (not sure why I did this).
     return kernel_x
 def get_kernel_y(kernel_y):             ### Return kernel size for y dimension (not sure why I did this).
@@ -387,6 +431,7 @@ def seed_population(population, seed_file_name):
     print(population)
     return population
 '''
+'''
 def seed_population(population, seed_file_name):
     with open(seed_file_name, 'rb') as fil:
         seed_individuals = pickle.load(fil)
@@ -396,7 +441,7 @@ def seed_population(population, seed_file_name):
     #print(population)
 
     return population
-
+'''
 
 ### Extract training data.
 with open('../x_train.pkl', 'rb') as pkl_file:
@@ -412,8 +457,8 @@ previous_y_dimension = original_y_dimension
 #print(previous_y_dimension)
 
 ### Not sure what this does besides setting the weights for each objective function.
-creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
-#creator.create('FitnessMax', base.Fitness, weights=(1., 1.))
+#creator.create('FitnessMax', base.Fitness, weights=(1., 1., 1., 1., 1.))
+creator.create('FitnessMax', base.Fitness, weights=(1., 1.))
 creator.create('Individual', list, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
@@ -483,7 +528,7 @@ toolbox.register('mate', tools.cxTwoPoint)
 toolbox.register('mutate', myMutation)
 #toolbox.register('select', tools.selNSGA2)
 toolbox.register('select', tools.selTournament, tournsize = 2)
-toolbox.register('evaluate', evaluate)
+#toolbox.register('evaluate', evaluate)
 
 def main():
     ### Population size.
@@ -518,13 +563,16 @@ def main():
     #NGEN = 1
     print('NGEN: ', NGEN)
 
-    pop = seed_population(pop, 'seed_002_use_this.pkl')
+    #pop = seed_population(pop, 'seed_002_use_this.pkl')
     #print('population')
     #for p in pop:
     #    print(p)
 
+    '''
+
     ### Evaluate fitness of initial population.
-    fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
+    #fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
+    fitnesses = [evaluate(ind, i, 0) for i, ind in enumerate(pop)]
 
     ### Save fitness values to individuals.
     for ind, fit in zip(pop, fitnesses):
@@ -545,6 +593,13 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
 
+    '''
+
+    for p in pop:
+        print(p)
+
+    '''
+
     ### Iterate over the generations.
     for g in range(1, NGEN):
         ### Select the parents.
@@ -561,6 +616,9 @@ def main():
             child1, child2 = toolbox.mate(parent1, parent2)
             del child1.fitness.values
             new_children.append(child1)
+            ### Why is only one of the children saved? I think it works out
+            ### this way so that there's not too many individuals.
+            ### This could probably change in the future.
 
         ### New population consists of selected parents and their children.
         new_population = selected_parents + new_children
@@ -576,7 +634,9 @@ def main():
         ### Check the kernel validity of the new population.
         new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
 
-        fitnesses = list( map(toolbox.evaluate, new_population) )
+        #fitnesses = list( map(toolbox.evaluate, new_population) )
+        fitnesses = [evaluate(ind, i, g) for i, ind in enumerate(pop)]
+
         for ind, fit in zip(new_population, fitnesses):
             ind.fitness.values = fit
 
@@ -598,8 +658,10 @@ def main():
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
 
+    '''
 
     ### Return the final population and final fitnesses.
-    return pop, fitnesses
+    #return pop, fitnesses
 
-pop, fitnesses = main()
+main()
+#pop, fitnesses = main()
