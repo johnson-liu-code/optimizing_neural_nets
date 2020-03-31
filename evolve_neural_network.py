@@ -23,12 +23,15 @@ with open('inFile.txt', 'r') as fil:
 max_num_layers = int(lines[0].split()[2])
 population_size = int(lines[1].split()[2])
 selection_size = int(lines[2].split()[2])
-MUTPB = float(lines[3].split()[2])
-NGEN = int(lines[4].split()[2])
-batch_size = int(lines[5].split()[2])
-num_classes = int(lines[6].split()[2])
-epochs = int(lines[7].split()[2])
-init_dir = lines[8].split()[2]
+crossover_size = int(lines[3].split()[2])
+random_size = int(lines[4].split()[2])
+MUTPB = float(lines[5].split()[2])
+CXPB = float(lines[6].split()[2])
+NGEN = int(lines[7].split()[2])
+batch_size = int(lines[8].split()[2])
+num_classes = int(lines[9].split()[2])
+epochs = int(lines[10].split()[2])
+init_dir = lines[11].split()[2]
 
 #print(max_num_layers, population_size, selection_size, MUTPB, NGEN)
 
@@ -524,25 +527,29 @@ exec(toolbox_ind_str)
 
 ### Register population, mate, mutate, select, and evaluate functions.
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-toolbox.register('mate', tools.cxTwoPoint)
+#toolbox.register('mate', tools.cxTwoPoint)
+toolbox.register('mate', tools.cxUniform, CXPB)
 toolbox.register('mutate', myMutation)
-#toolbox.register('select', tools.selNSGA2)
-toolbox.register('select', tools.selTournament, tournsize = 2)
+toolbox.register('select', tools.selNSGA2)
+#toolbox.register('select', tools.selTournament, tournsize = 2)
 #toolbox.register('evaluate', evaluate)
 
 def main():
     ### Population size.
+    
     #population_size = 32
     #population_size = 4
     #print('population_size: ', population_size)
 
     ### Number of individuals (parents) to clone for the next generation.
+    ### Specified in inFile.txt.
     #selection_size = 16
     #selection_size = 2
     #print('selection_size: ', selection_size)
 
     ### Number of individuals made through crossing of selected parents.
-    cross_over_size = population_size - selection_size
+    ### Specified in inFile.txt.
+    #crossover_size = population_size - selection_size
 
     print('Setting up population.\n')
 
@@ -555,10 +562,16 @@ def main():
 
     print('population_size: ', population_size)
     print('selection_size: ', selection_size)
+    print('crossover_size: ', crossover_size)
+    print('random_size: ', random_size)
 
-    ### Set mutation probability and number of generations.
+    ### Set mutation probability.
+    ### Specified in inFile.txt.
     #MUTPB = .2
     print('MUTPB: ', MUTPB)
+
+    ### Set number of generations.
+    ### Specified in inFile.txt.
     #NGEN = 100
     #NGEN = 1
     print('NGEN: ', NGEN)
@@ -610,12 +623,24 @@ def main():
         new_children = []
 
         ### Mate the parents to form new individuals.
-        for c in range(cross_over_size):
+        cross_made = 0
+        while cross_made < crossover_size:
+        #for c in range(crossover_size):
             parent1, parent2 = random.sample(selected_parents, 2)
-            parent1, parent2 = toolbox.clone(parent1), toolbox.clone(parent2)
+            # Not sure what the cloning is for.
+            #parent1, parent2 = toolbox.clone(parent1), toolbox.clone(parent2)
+            
             child1, child2 = toolbox.mate(parent1, parent2)
-            del child1.fitness.values
-            new_children.append(child1)
+
+            if cross_made < crossover_size:
+                del child1.fitness.values
+                new_children.append(child1)
+                cross_made = cross_made + 1
+            if cross_made < crossover_size:
+                del child2.fitness.values
+                new_children.append(child2)
+                cross_made = cross_made + 1
+
             ### Why is only one of the children saved? I think it works out
             ### this way so that there's not too many individuals.
             ### This could probably change in the future.

@@ -1,7 +1,10 @@
 max_num_layers = 2
 population_size = 4
-selection_size = 2
+selection_size = 8
+crossover_size = 16
+random_size = 8
 MUTPB = .4
+CXPB = .1
 NGEN = 2
 batch_size = 100
 num_classes = 10
