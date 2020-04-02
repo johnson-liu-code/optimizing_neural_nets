@@ -9,6 +9,7 @@ import time
 import datetime
 import itertools
 
+import deap
 from deap import base
 from deap import creator
 from deap import tools
@@ -189,7 +190,7 @@ def evaluate(individual, i, g):
     return fitness
 
 ### Define how individuals mutate.
-def myMutation(individual):
+def myMutation(individual, original_x_dimension, original_y_dimension):
     ### Divide individual's chromosome into chunks that represent each layer.
     #num_of_layers = individual[0]
     #individual_without_first_element = individual[1:] 
@@ -203,13 +204,14 @@ def myMutation(individual):
 
     ### Iterate over individuals.
     for chunk in chunks:
-        ### Mutate chromosome (layer) expression. The value is 0 (not expressed) or 1 (expressed).
+        print(chunk)
+        ### Mutate chromosome (layer) expression. The value is 0 (not expressed), 1 (expressed), 2 (dropout layer), 3 (flatten).
         #chunk[0] = tools.mutUniformInt([ chunk[0] ], 0, 2, MUTPB)
         r = np.random.uniform(0, 1)
-        if r <= MUTPB:        
-            chunk[0] = np.random.randint(3)
+        if r <= MUTPB:
+            chunk[0] = np.random.randint(4)
 
-        ### Mutate layer type.
+        ### Mutate layer type. The value is in the range 0:5.
         #chunk[1] = tools.mutUniformInt([ chunk[1] ], 0, 5, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
@@ -220,7 +222,13 @@ def myMutation(individual):
         #chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 10, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
-            chunk[2] = np.random.randint(2, 11)
+            #chunk[2] = np.random.randint(2, 101)
+
+            chunk[2] = int(np.random.normal(chunk[2], 1))
+
+            ### Turn the output dimension to 2 if it is less than 2. This could be changed later.
+            if chunk[2] < 2:
+                chunk[2] = 2
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
         #chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, MUTPB)
@@ -252,7 +260,10 @@ def myMutation(individual):
         #chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
-            chunk[5] = np.random.randint(1, 11)
+            #chunk[5] = np.random.randint(1, 11)
+            ratio = float(chunk[5]) / original_x_dimension
+            new_ratio = np.random.normal(ratio, .1)
+            chunk[5] = int(new_ratio * original_x_dimension)
         #print('\n strides: ' + str(chunk[5]) + '\n')
 
         ### Mutate activation type.
@@ -312,7 +323,7 @@ def myMutation(individual):
         ### Add chunk (layer) to the mutated individual.
         mutated_individual += chunk
 
-    ### Create the mutated individual.
+    ### Create the mutated individual. Not sure why this is needed. Is it needed?
     mutated_individual = creator.Individual(mutated_individual)
 
     return mutated_individual
@@ -398,14 +409,14 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 
 #def num_layers():
 #    return np.random.randint(1, max_num_layers+1 )
-def use_layer():                        ### Return 0 (skip layer) or 1 (use layer).
-    return np.random.randint(0, 2)
-def layer():                            ### Return random integer between 0 and 2 for layer type.
+def use_layer():                        ### Return 0 (skip layer), 1 (use layer), 2 (dropout layer), 3 (flatten layer).
+    return np.random.randint(0, 4)
+def layer():                            ### Return random integer between 0 and 5 for layer type.
     return np.random.randint(6)
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
-    #return np.random.randint(2, 101)
+    return np.random.randint(2, 101)
     #return np.random.randint(2, 11)
-    return 2
+    #return 2
 def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (not sure why I did this).
     return kernel_x
 def get_kernel_y(kernel_y):             ### Return kernel size for y dimension (not sure why I did this).
@@ -421,6 +432,10 @@ def bias_init():                        ### Return random integer between 0 and 
 def bias_reg():                         ### Return random float between 0 and 1 for bias regularizer for layer.
     return np.random.uniform()
 def act_reg():                          ### Return random float between 0 and 1 for activation regularizer for layer.
+    return np.random.uniform()
+def kernel_init():                      ### Return random integer between 0 and 10 for the type of kernel initializer.
+    return np.random.randint(11)
+def dropout_rate():                     ### Return random float between 0 and 1 for the dropout rate.
     return np.random.uniform()
 
 '''
@@ -482,6 +497,8 @@ for n in range(max_num_layers):
     bias_init_str = 'bias_init_' + str(n)
     bias_reg_str = 'bias_reg_' + str(n)
     act_reg_str = 'act_reg_' + str(n)
+    kernel_init_str = 'kernel_init_' + str(n)
+    dropout_rate_str = 'dropout_rate_' + str(n)
     
     toolbox.register(use_layer_str, use_layer)
     toolbox.register(layer_str, layer)
@@ -515,8 +532,10 @@ for n in range(max_num_layers):
     toolbox.register(bias_init_str, bias_init)
     toolbox.register(bias_reg_str, bias_reg)
     toolbox.register(act_reg_str, act_reg)
+    toolbox.register(kernel_init_str, kernel_init)
+    toolbox.register(dropout_rate_str, dropout_rate)
 
-    toolbox_ind_str += 'toolbox.' + use_layer_str + ', toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + strides_str + ', toolbox.' + act_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
+    toolbox_ind_str += 'toolbox.' + use_layer_str + ', toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + strides_str + ', toolbox.' + act_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str + ', toolbox.' + kernel_init_str + ', toolbox.' + dropout_rate_str
     if n != max_num_layers-1:
         toolbox_ind_str += ", "
 
@@ -528,7 +547,7 @@ exec(toolbox_ind_str)
 ### Register population, mate, mutate, select, and evaluate functions.
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 #toolbox.register('mate', tools.cxTwoPoint)
-toolbox.register('mate', tools.cxUniform, CXPB)
+# THIS ISN'T WORKING toolbox.register('mate', tools.cxUniform, CXPB)
 toolbox.register('mutate', myMutation)
 toolbox.register('select', tools.selNSGA2)
 #toolbox.register('select', tools.selTournament, tournsize = 2)
@@ -581,11 +600,12 @@ def main():
     #for p in pop:
     #    print(p)
 
-    '''
-
     ### Evaluate fitness of initial population.
     #fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
-    fitnesses = [evaluate(ind, i, 0) for i, ind in enumerate(pop)]
+    # USE THIS ONE fitnesses = [evaluate(ind, i, 0) for i, ind in enumerate(pop)]
+    fitnesses = [(1, 1) for p in pop]
+
+    '''
 
     ### Save fitness values to individuals.
     for ind, fit in zip(pop, fitnesses):
@@ -607,18 +627,17 @@ def main():
         pickle.dump(fitnesses, fil)
 
     '''
-
     for p in pop:
         print(p)
-
-    '''
 
     ### Iterate over the generations.
     for g in range(1, NGEN):
         ### Select the parents.
         selected_parents = toolbox.select( pop, selection_size )
 
-        print('Generation {} ... \n'.format(g))
+        print('number selected parents: ', len(selected_parents))
+
+        print('\nGeneration {} ... \n'.format(g))
 
         new_children = []
 
@@ -630,7 +649,15 @@ def main():
             # Not sure what the cloning is for.
             #parent1, parent2 = toolbox.clone(parent1), toolbox.clone(parent2)
             
-            child1, child2 = toolbox.mate(parent1, parent2)
+            #print('parent1: ', parent1)
+            #print('parent2: ', parent2)
+
+            #child1, child2 = toolbox.mate(parent1, parent2)
+
+            child1, child2 = deap.tools.cxUniform(parent1, parent2, CXPB)
+
+            print('child1: ', child1)
+            print('child2: ', child2)
 
             if cross_made < crossover_size:
                 del child1.fitness.values
@@ -645,6 +672,8 @@ def main():
             ### this way so that there's not too many individuals.
             ### This could probably change in the future.
 
+        new_random_migrants = toolbox.population(n=random_size)
+
         ### New population consists of selected parents and their children.
         new_population = selected_parents + new_children
 
@@ -652,15 +681,19 @@ def main():
         for m, mutant in enumerate(new_population):
             r = np.random.uniform(0, 1)
             if r <= MUTPB:
-                mutated_ind = toolbox.mutate(mutant)
+                mutated_ind = toolbox.mutate(mutant, original_x_dimension, original_y_dimension)
                 del mutated_ind.fitness.values
                 new_population[m] = mutated_ind
+
+        ### Add migrants to the new population.
+        new_population = new_population + new_random_migrants
 
         ### Check the kernel validity of the new population.
         new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
 
         #fitnesses = list( map(toolbox.evaluate, new_population) )
-        fitnesses = [evaluate(ind, i, g) for i, ind in enumerate(pop)]
+        # USE THIS ONE fitnesses = [evaluate(ind, i, g) for i, ind in enumerate(pop)]
+        fitnesses = [(1, 1) for p in pop]
 
         for ind, fit in zip(new_population, fitnesses):
             ind.fitness.values = fit
@@ -683,10 +716,9 @@ def main():
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
 
-    '''
-
     ### Return the final population and final fitnesses.
-    #return pop, fitnesses
+    return pop, fitnesses
 
-main()
-#pop, fitnesses = main()
+if __name__ == '__main__':
+    #main()
+    pop, fitnesses = main()
