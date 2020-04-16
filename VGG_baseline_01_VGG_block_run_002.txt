@@ -1,0 +1,17 @@
+Using TensorFlow backend.
+WARNING:tensorflow:From /usr/local/lib/python3.6/site-packages/tensorflow/python/framework/op_def_library.py:263: colocate_with (from tensorflow.python.framework.ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Colocations handled automatically by placer.
+WARNING:tensorflow:From /usr/local/lib/python3.6/site-packages/tensorflow/python/ops/math_ops.py:3066: to_int32 (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.cast instead.
+2020-04-15 16:15:54.246261: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2394430000 Hz
+2020-04-15 16:15:54.261325: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x3f64360 executing computations on platform Host. Devices:
+2020-04-15 16:15:54.261432: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): <undefined>, <undefined>
+50000
+Using real-time data augmentation.
+Epoch 1/1
+ - 22s - loss: 2.1430 - acc: 0.2125 - val_loss: 1.9995 - val_acc: 0.2784
+test_eval_time:  20.031551122665405
+train_eval_time:  4.85918402671814
+Training_loss: 1.9961646500587464 Test_accuracy: 0.2885 Mem: 2430914560 CPU: 466.5
