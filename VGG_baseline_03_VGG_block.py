@@ -1,6 +1,6 @@
 batch_size = 100
 num_classes = 10
-epochs = 5000
+epochs = 300
 import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
@@ -13,6 +13,7 @@ from keras import callbacks
 from apscheduler.schedulers.background import BackgroundScheduler
 import pickle
 import psutil
+import time
 
 process = psutil.Process()
 
@@ -151,7 +152,8 @@ else:
                                      epochs = epochs,
                                      validation_data = (x_train_valid, y_train_valid),
                                      workers = 8,
-                                     callbacks = [es] )
+                                     callbacks = [es],
+                                     verbose = 2 )
 
     #model.fit_generator(datagen.flow(x_train_train, y_train_train, batch_size = batch_size),
     #                                 steps_per_epoch = 100,
@@ -161,8 +163,19 @@ else:
 
 
 # Score trained model.
+t0 = time.time()
 scores_train_train = model.evaluate(x_train_train, y_train_train, verbose = 0)
+t1 = time.time()
+train_eval_time = t1-t0
+print('train_eval_time: ', train_eval_time)
+
+t2 = time.time()
 scores_test = model.evaluate(x_test, y_test, verbose = 0)
+t3 = time.time()
+test_eval_time = t3-t2
+print('test_eval_time: ', test_eval_time)
+
+
 scheduler.shutdown()
 cpu_time = process.cpu_times().user
 
