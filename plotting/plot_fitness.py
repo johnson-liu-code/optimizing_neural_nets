@@ -6,8 +6,10 @@ from running_average import running_avg4
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+dir_name = '/exports/home/j_liu21/projects/genetic_algorithms/optimizing_neural_nets/data/2020/202001/20200130/0009/'
+#dir_name = '/exports/home/j_liu21/projects/genetic_algorithms/optimizing_neural_nets/data/2020/202002/20200204/0008/'
+#dir_name = '/exports/home/j_liu21/projects/genetic_algorithms/optimizing_neural_nets/data/2019/201912/20191204/0005/'
 
-dir_name = '/exports/home/j_liu21/projects/genetic_algorithms/optimizing_neural_nets/data/2019/201912/20191204/0005/'
 generation_directories = os.listdir(dir_name)
 
 max_accuracy_vs_gen = []
@@ -25,6 +27,8 @@ for generation in sorted(generation_directories):
     with open(fitness_file, 'rb') as fit:
         fitnesses = pickle.load(fit)
     accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu = zip(*fitnesses)
+    #accuracy, inverse_loss = zip(*fitnesses)
+
     #inverse_loss = 1./np.array(loss)
 
     max_accuracy_vs_gen.append( max(accuracy) )
@@ -83,15 +87,15 @@ with open('cpu', 'w') as cpu:
 '''
 
 #fig, ax = plt.subplots(3, 2)
-plt.plot(max_accuracy_vs_gen, label = 'accuracy')
+plt.plot(max_accuracy_vs_gen, label = 'accuracy', linewidth = 1)
 #plt.plot(accuracy_vs_gen)
-plt.plot(max_inverse_loss_vs_gen, label = 'inverse loss (normalized)')
+plt.plot(max_inverse_loss_vs_gen, label = 'inverse loss (normalized)', linewidth = 1)
 #plt.plot(inverse_loss_vs_gen)
-plt.plot(max_inverse_duration_vs_gen, label = 'inverse duration (normalized)')
+plt.plot(max_inverse_duration_vs_gen, label = 'inverse duration (normalized)', linewidth = 1)
 #plt.plot(inverse_duration_vs_gen)
-plt.plot(max_inverse_mem_vs_gen, label = 'inverse memory (normalized)')
+plt.plot(max_inverse_mem_vs_gen, label = 'inverse memory (normalized)', linewidth = 1)
 #plt.plot(inverse_mem_vs_gen)
-plt.plot(max_inverse_cpu_vs_gen, label = 'inverse cpu usage (normalized)')
+plt.plot(max_inverse_cpu_vs_gen, label = 'inverse cpu usage (normalized)', linewidth = 1)
 #plt.plot(inverse_cpu_vs_gen)
 
 plt.grid(linestyle = '--')
