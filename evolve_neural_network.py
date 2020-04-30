@@ -194,6 +194,7 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
     ### Divide individual's chromosome into chunks that represent each layer.
     #num_of_layers = individual[0]
     #individual_without_first_element = individual[1:] 
+
     chunks = divide_chunks(individual, 13)
     
     #mut_num_of_layers = tools.mutUniformInt([ num_of_layers ], 1, max_num_layers, MUTPB)
@@ -211,13 +212,13 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
         if r <= MUTPB:
             chunk[0] = np.random.randint(4)
 
-        ### Mutate layer type. The value is in the range 0:5.
+        ### Mutate layer type. The value is in the range 0:6 (inclusive).
         #chunk[1] = tools.mutUniformInt([ chunk[1] ], 0, 5, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
-            chunk[1] = np.random.randint(6)
+            chunk[1] = np.random.randint(7)
 
-        ### Mutate number of output_dimensionality.
+        ### Mutate the output dimensionality.
         #chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 4, MUTPB)
         #chunk[2] = tools.mutUniformInt([ chunk[2] ], 2, 10, MUTPB)
         r = np.random.uniform(0, 1)
@@ -229,6 +230,8 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
             ### Turn the output dimension to 2 if it is less than 2. This could be changed later.
             if chunk[2] < 2:
                 chunk[2] = 2
+            #if chunk[2] > 100:
+            #    chunk[2] = 100
 
         ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
         #chunk[3] = tools.mutGaussian([ chunk[3] ], chunk[3], .1, MUTPB)
@@ -245,25 +248,37 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
 
         #print('chunk4: ', chunk[4])
 
-        ### Make the ratios positive.
+        ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
         #if chunk[3][0][0] < 0:
         #    chunk[3][0][0] += 1
         #if chunk[4][0][0] < 0:
         #    chunk[4][0][0] += 1
         if chunk[3] < 0:
-            chunk[3] += 1
+            #chunk[3] += 1
+            chunk[3] = 0
+        if chunk[3] > 1:
+            chunk[3] = 1
+
         #print('chunk3: ', chunk[3], ' chunk4: ', chunk[4])
         if chunk[4] < 0:
-            chunk[4] += 1
+            #chunk[4] += 1
+            chunk[4] = 0
+        if chunk[4] > 1:
+            chunk[4] = 1
 
-        ### Mutate strides.
+        ### Mutate the stride length.
         #chunk[5] = tools.mutUniformInt([ chunk[5] ], 1, 10, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
             #chunk[5] = np.random.randint(1, 11)
             ratio = float(chunk[5]) / original_x_dimension
             new_ratio = np.random.normal(ratio, .1)
+
+            if new_ratio > 1:
+                new_ratio = 1
+
             chunk[5] = int(new_ratio * original_x_dimension)
+
         #print('\n strides: ' + str(chunk[5]) + '\n')
 
         ### Mutate activation type.
@@ -289,12 +304,21 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
             chunk[9] = np.random.normal(chunk[9], .1)
+            if chunk[9] > 1:
+                chunk[9] = 1
+            elif chunk[9] < -1:
+                chunk[9] = -1
 
         ### Mutate activity regularizer.
         #chunk[10] = tools.mutGaussian([ chunk[10] ], chunk[10], .1, MUTPB)
         r = np.random.uniform(0, 1)
         if r <= MUTPB:
             chunk[10] = np.random.normal(chunk[10], .1)
+            if chunk[10] > 1:
+                chunk[10] = 1
+            elif chunk[10] < -1:
+                chunk[10] = -1
+
 
         ### Mutate kernel initializer.
         r = np.random.uniform(0, 1)
@@ -306,7 +330,7 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
         if r <= MUTPB:
             chunk[12] = np.random.normal(chunk[12], .1)
         if chunk[12] > 1:
-            chunk[12] = .9
+            chunk[12] = 1
         elif chunk[12] < 0:
             chunk[12] = 0
 
@@ -411,8 +435,8 @@ def check_kernel_validity(individual, original_x_dimension, original_y_dimension
 #    return np.random.randint(1, max_num_layers+1 )
 def use_layer():                        ### Return 0 (skip layer), 1 (use layer), 2 (dropout layer), 3 (flatten layer).
     return np.random.randint(0, 4)
-def layer():                            ### Return random integer between 0 and 5 for layer type.
-    return np.random.randint(6)
+def layer():                            ### Return random integer between 0 and 6 for layer type.
+    return np.random.randint(7)
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     return np.random.randint(2, 101)
     #return np.random.randint(2, 11)
