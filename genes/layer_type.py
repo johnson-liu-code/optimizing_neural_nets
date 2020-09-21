@@ -8,8 +8,7 @@ layer_type = {  0: "Dense",
                 2: "SeparableConv2D",
                 3: "DepthwiseConv2D",
                 4: "MaxPooling2D",
-                5: "AveragePooling2D",
-                6: "Dropout" }
+                5: "AveragePooling2D"  }
 
 layers_with_padding = [1, 2, 3, 4, 5]
 layers_with_kernel = [1, 2, 3]

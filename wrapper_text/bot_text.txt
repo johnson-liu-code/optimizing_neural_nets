@@ -2,7 +2,7 @@ model.add(Flatten())
 model.add(Dense(num_classes, activation='softmax') )
 
 opt = keras.optimizers.rmsprop(lr=0.01, decay=1e-6)
-#opt = keras.optimizers.SGD(learning_rate = .01, decay=1e-6)
+#opt = keras.optimizers.SGD(lr = .01, decay=1e-6)
 
 es = keras.callbacks.EarlyStopping(monitor = 'val_loss', verbose = 1)
 

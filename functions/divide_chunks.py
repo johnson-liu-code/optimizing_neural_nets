@@ -1,6 +1,7 @@
 
 
-### For individuals with multiple layers, this function chops up the chromosome vector into chunks for each layer.
+### For individuals with multiple layers, this function chops up
+###     the chromosome vector into chunks for each layer.
 ### Don't know how this function works. Got this from the internet.
 
 def divide_chunks(my_list, n):

@@ -36,14 +36,14 @@ def get_phenotype(chromosome):
     #print(chromosome[0])
 
     phenotype = "model.add("
-    phenotype += layer_type[chromosome[1]] + "("                    # layer type
+    phenotype += layer_type[chromosome[1]] + "("      # layer type
 
     if chromosome[1] in layers_with_dimensionality:
         if first_layer_added == False:
             first_layer_added = True
             phenotype += str(chromosome[2])
         else:
-            phenotype += ", " + str(chromosome[2])                             # number of output_dimensionality
+            phenotype += ", " + str(chromosome[2])    # number of output_dimensionality
 
     if chromosome[1] in layers_with_kernel:
         if first_layer_added == False:
@@ -55,9 +55,9 @@ def get_phenotype(chromosome):
     if chromosome[1] in layers_needing_strides:
         if first_layer_added == False:
             first_layer_added = True
-            phenotype += "strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ") "
+            phenotype += "strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ")"
         else:
-            phenotype += ", strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ") "
+            phenotype += ", strides=(" + str(chromosome[5]) + "," + str(chromosome[5]) + ")"
 
     if chromosome[1] in layers_with_pooling:
         if first_layer_added == False:
