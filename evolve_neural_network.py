@@ -18,12 +18,17 @@ from deap import tools
 from genotype_to_phenotype import get_phenotype
 from functions.divide_chunks import divide_chunks
 
-with open('inFile.txt', 'r') as fil:
+
+infile_name = sys.argv[1]
+
+with open(infile_name, 'r') as fil:
 #with open('test_inFile.txt', 'r') as fil:
     lines = fil.readlines()
 
-max_num_layers = int(lines[0].split()[2]) ### Beyond the first layer. The first
-    ### layer is a special layer that cannot be a flatten or dropout layer.
+### Number of layers beyond the first layer. The first layer is a
+### special layer that cannot be a flatten or dropout layer.
+max_num_layers = int(lines[0].split()[2])
+
 population_size = int(lines[1].split()[2])
 selection_size = int(lines[2].split()[2])
 crossover_size = int(lines[3].split()[2])
