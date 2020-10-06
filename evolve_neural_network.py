@@ -8,6 +8,7 @@ import math
 import time
 import datetime
 import itertools
+from multiprocessing import Pool as ThreadPool
 
 
 import deap
@@ -59,11 +60,14 @@ day = today.day
 
 data_directory_name = 'data/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
 neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
+output_directory_name = 'output_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/'.format(year, month, day)
 
 if not os.path.isdir(data_directory_name):
     os.makedirs(data_directory_name)
 if not os.path.isdir(neural_net_directory_name):
     os.makedirs(neural_net_directory_name)
+if not os.path.isdir(output_directory_name):
+    os.makedirs(output_directory_name)
 
 if not os.listdir(data_directory_name):
     next_dir_number = 1
@@ -75,16 +79,19 @@ else:
 
 data_dir_number_name = data_directory_name + '{0:04d}/'.format(next_dir_number)
 neural_net_dir_number_name = neural_net_directory_name + '{0:04d}/'.format(next_dir_number)
+output_dir_number_name = output_directory_name + '{0:04d}/'.format(next_dir_number)
 
 if not os.path.isdir(data_dir_number_name):
     os.makedirs(data_dir_number_name)
 if not os.path.isdir(neural_net_dir_number_name):
     os.makedirs(neural_net_dir_number_name)
+if not os.path.isdir(output_dir_number_name):
+    os.makedirs(output_dir_number_name)
 
 ### Get the fitness of an individual.
 #def evaluate(individual):
 def evaluate(individual, i, g):
-    #print('individual:', individual)
+    print('i: {} g: {} individual: {}'.format(i, g, individual) )
     x_chunks = divide_chunks(individual, 13)    # There are 13 genes within each chromosome (layer).
     #print('x_chunks: ', x_chunks)
 
@@ -113,11 +120,22 @@ def evaluate(individual, i, g):
 
     if zero_layers != num_layers:
         neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
+        output_directory_name = 'output_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format(year, month, day, next_dir_number)
 
         neural_net_generation_dir_name = neural_net_directory_name + 'generation_{0:05d}/'.format(g)
+        output_generation_dir_name = output_directory_name + 'generation_{0:05d}/'.format(g)
 
         if not os.path.isdir(neural_net_generation_dir_name):
-            os.makedirs(neural_net_generation_dir_name)
+            try:
+                os.makedirs(neural_net_generation_dir_name)
+            except:
+                pass
+
+        if not os.path.isdir(output_generation_dir_name):
+            try:
+                os.makedirs(output_generation_dir_name)
+            except:
+                pass
 
         #if not os.listdir(neural_net_directory_name):
         #    next_file_number = 1
@@ -127,39 +145,41 @@ def evaluate(individual, i, g):
         #    last_file_number = int(last_file_name[-1].split('_')[1])
         #    next_file_number = last_file_number + 1
 
-        temp_file_name = neural_net_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_neural_net.py'.format(year, month, day, i)
+        run_file_name = neural_net_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_neural_net.py'.format(year, month, day, i)
+        output_file_name = output_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_output.txt'.format(year, month, day, i)
 
-        with open(temp_file_name, 'w') as tempfile:
-            tempfile.write( 'batch_size = ' + str(batch_size) + '\n')
-            tempfile.write( 'num_classes = ' + str(num_classes) + '\n')
-            tempfile.write( 'epochs = ' + str(epochs) + '\n')
+        with open(run_file_name, 'w') as run_file:
+            run_file.write( 'batch_size = ' + str(batch_size) + '\n')
+            run_file.write( 'num_classes = ' + str(num_classes) + '\n')
+            run_file.write( 'epochs = ' + str(epochs) + '\n')
             ### Write top wrapper to file.
             for line in top_lines:
-                tempfile.write( line.split('\n')[0] + '\n')
+                run_file.write( line.split('\n')[0] + '\n')
 
             ### Randomly choose the number of output_dimensionality in the first layer.
             #number_of_first_layer_output_dimensionality = np.random.randint(2, 100)
             #number_of_first_layer_output_dimensionality = 10
 
             ### Write first layer to file. Need this layer (or some other type of layer) for the first layer to take in the input shape.
-            ##### Modified code to always have a first non-empyt layer that is not a flatten or a dropout layer.
-            #tempfile.write("model.add(Conv2D(" + str(number_of_first_layer_output_dimensionality) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
+            ##### Modified code to always have a first non-empty layer that is not a flatten or a dropout layer.
+            #run_file.write("model.add(Conv2D(" + str(number_of_first_layer_output_dimensionality) + ", (3, 3), padding='same', activation='relu', input_shape=x_train.shape[1:]))\n")
 
             ### Write phenotype to file.
             for phenotype in phenotype_list:
                 #print('phenotype: ', phenotype)
-                tempfile.write(phenotype + '\n')
+                run_file.write(phenotype + '\n')
 
             ### Write bottom wrapper to file.
             for line in bot_lines:
-                tempfile.write( line.split('\n')[0] + '\n' )
+                run_file.write( line.split('\n')[0] + '\n' )
     
         ### Save time at which job was started.
         #start = time.time()
 
         ### Start the job.
-        proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', 'python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #proc = subprocess.Popen(['python3.6', temp_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', '--exclude=node005', 'python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #proc = subprocess.Popen(['python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #proc.wait()
 
         ### Save time at which job ended.
         #end = time.time()
@@ -172,7 +192,10 @@ def evaluate(individual, i, g):
 
         ### Capture the output of the job.
         out = proc.communicate()[0].decode('utf-8')
-        #print('out: ', out)
+        print('out: ', out)
+        with open(output_file_name, 'w') as output:
+            for line in out:
+                output.write(line)
 
         ### Compute inverse loss, inverse memory, and inverse cpu usage fitnesses.
         inverse_loss = 1./float(out.upper().split()[-7])
@@ -503,6 +526,7 @@ def convert(x):
     except ValueError:
         return float(x)
 
+# Extract the initial population
 def seed_population(init_dir):
     init_population = []
     for fil in os.listdir(init_dir):
@@ -601,7 +625,7 @@ exec(toolbox_ind_str)
 
 ### Register population, mate, mutate, select, and evaluate functions.
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-#toolbox.register('mate', tools.cxTwoPoint)
+toolbox.register('mate', tools.cxTwoPoint)
 # THIS ISN'T WORKING toolbox.register('mate', tools.cxUniform, CXPB)
 toolbox.register('mutate', myMutation)
 toolbox.register('select', tools.selNSGA2)
@@ -649,11 +673,16 @@ def main():
     false_list = ['FALSE', 'false', 'False']
     if init_dir not in false_list:
         pop = toolbox.population_guess()
+
+        remaining_pop_to_initiate = population_size - len(pop)
+        remaining_pop = toolbox.population(remaining_pop_to_initiate)
+
+        pop = pop + remaining_pop
     else:
         pop = toolbox.population(n=population_size)
 
-    for p in pop:
-        p[0] = 1
+    #for p in pop:
+    #    p[0] = 1
 
     print('\n\nInitial population ...')
     for c, i in enumerate(pop):
@@ -662,8 +691,19 @@ def main():
 
     ### Evaluate fitness of initial population.
     #fitnesses = list( toolbox.map(toolbox.evaluate, pop) )
-    # USE THIS ONE
-    fitnesses = [evaluate(ind, i, 0) for i, ind in enumerate(pop)]
+
+    #fitnesses = [evaluate(ind, i, 0) for i, ind in enumerate(pop)]
+
+    index = np.arange( population_size )
+    generation = [ 0 for x in range( population_size ) ]
+
+    pool = ThreadPool( population_size )
+
+    fitnesses = pool.starmap( evaluate, zip(pop, index, generation) )
+
+    pool.close()
+    pool.join()
+
     #fitnesses = [(1, 1) for p in pop]
 
     ### Save fitness values to individuals.
@@ -757,8 +797,19 @@ def main():
         new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
 
         #fitnesses = list( map(toolbox.evaluate, new_population) )
-        # USE THIS ONE
-        fitnesses = [evaluate(ind, i, g) for i, ind in enumerate(pop)]
+        #fitnesses = [evaluate(ind, i, g) for i, ind in enumerate(new_population)]
+
+        #index = np.arange( population_size )
+
+        generation = [ g for x in range( population_size ) ]
+
+        pool = ThreadPool( population_size )
+
+        fitnesses = pool.starmap( evaluate, zip(pop, index, generation) )
+
+        pool.close()
+        pool.join()     
+
         #fitnesses = [(1, 1) for p in pop]
 
         for ind, fit in zip(new_population, fitnesses):
