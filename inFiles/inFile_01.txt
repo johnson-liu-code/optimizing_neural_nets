@@ -1,0 +1,12 @@
+max_num_layers = 2
+population_size = 4
+selection_size = 2
+crossover_size = 2
+random_size = 0
+MUTPB = .4
+CXPB = .1
+NGEN = 1
+batch_size = 100
+num_classes = 10
+epochs = 2
+initial = FALSE

@@ -177,7 +177,8 @@ def evaluate(individual, i, g):
         #start = time.time()
 
         ### Start the job.
-        proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', '--exclude=node005', 'python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #proc = subprocess.Popen(['srun', '--ntasks', '1', '--nodes', '1', 'python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(['python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         #proc = subprocess.Popen(['python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         #proc.wait()
 
@@ -193,9 +194,9 @@ def evaluate(individual, i, g):
         ### Capture the output of the job.
         out = proc.communicate()[0].decode('utf-8')
         print('out: ', out)
-        with open(output_file_name, 'w') as output:
-            for line in out:
-                output.write(line)
+        #with open(output_file_name, 'w') as output:
+        #    for line in out:
+        #        output.write(line)
 
         ### Compute inverse loss, inverse memory, and inverse cpu usage fitnesses.
         inverse_loss = 1./float(out.upper().split()[-7])

@@ -1,4 +1,0 @@
-srun: Force Terminated job 70104
-srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
-slurmstepd: error: *** STEP 70104.0 ON node002 CANCELLED AT 2019-12-04T23:06:12 ***
-srun: error: node002: task 0: Terminated
