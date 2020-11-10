@@ -1,6 +1,6 @@
 batch_size = 100
 num_classes = 10
-epochs = 300
+epochs = 5000
 import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
@@ -42,8 +42,8 @@ x_data_len = len(x_train)
 #x_train_train = x_train[0:end]
 #x_train_valid = x_train[end:]
 #print(x_data_len)
-x_train_train = x_train[0:25000]
-x_train_valid = x_train[25000:50000]
+x_train_train = x_train[0:40000]
+x_train_valid = x_train[40000:50000]
 ############################################################
 
 pkl_file = open('/exports/home/j_liu21/projects/genetic_algorithms/y_train.pkl', 'rb')
@@ -53,8 +53,8 @@ pkl_file.close()
 ############################################################
 #y_train_train = y_train[0:end]
 #y_train_valid = y_train[end:]
-y_train_train = y_train[0:25000]
-y_train_valid = y_train[25000:50000]
+y_train_train = y_train[0:40000]
+y_train_valid = y_train[40000:50000]
 ############################################################
 
 pkl_file = open('/exports/home/j_liu21/projects/genetic_algorithms/x_test.pkl', 'rb')
@@ -74,43 +74,32 @@ model = Sequential()
 
 # 1st Convolutional Layer
 model.add(Conv2D(filters=96, input_shape=x_train.shape[1:], kernel_size=(11,11), strides=(4,4), padding="same", activation = "relu"))
-
 # Max Pooling
 model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2), padding="same"))
-
 # 2nd Convolutional Layer
 model.add(Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), padding="same", activation = "relu"))
-
 # Max Pooling
 model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2), padding="same"))
-
 # 3rd Convolutional Layer
 model.add(Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), padding="same", activation = "relu"))
-
 # 4th Convolutional Layer
 model.add(Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), padding="same", activation = "relu"))
-
 # 5th Convolutional Layer
 model.add(Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), padding="same", activation = "relu"))
-
 # Max Pooling
 model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2), padding="same"))
-
 # Passing it to a Fully Connected layer
 model.add(Flatten())
 # 1st Fully Connected Layer
 model.add(Dense(9216, activation = "relu"))
-
 # 2nd Fully Connected Layer
 model.add(Dense(4096, activation = "relu"))
-
 # 3rd Fully Connected Layer
 model.add(Dense(4096, activation = "relu"))
-
 # Output Layer
 model.add(Dense(num_classes, activation = "softmax"))
 
-
+model.summary()
 
 #opt = keras.optimizers.rmsprop(lr=0.005, decay=1e-6)
 opt = keras.optimizers.SGD(lr = .005, decay=1e-6)
@@ -138,8 +127,7 @@ if not data_augmentation:
               batch_size = batch_size,
               epochs = epochs,
               validation_data = (x_train_valid, y_train_valid),
-              shuffle = True, 
-              verbose = 2)
+              shuffle = True)
 else:
     print('Using real-time data augmentation.')
                    # This will do preprocessing and realtime data augmentation:
@@ -179,7 +167,7 @@ else:
                                      validation_data = (x_train_valid, y_train_valid),
                                      workers = 8,
                                      callbacks = [es],
-                                     verbose = 2 )
+                                     verbose = 1 )
 
     #model.fit_generator(datagen.flow(x_train_train, y_train_train, batch_size = batch_size),
     #                                 steps_per_epoch = 100,

@@ -92,7 +92,7 @@ if not os.path.isdir(output_dir_number_name):
 #def evaluate(individual):
 def evaluate(individual, i, g):
     print('i: {} g: {} individual: {}'.format(i, g, individual) )
-    x_chunks = divide_chunks(individual, 13)    # There are 13 genes within each chromosome (layer).
+    x_chunks = divide_chunks(individual, 17)    # There are 17 genes within each chromosome (layer).
     #print('x_chunks: ', x_chunks)
 
     ### Convert genotype to phenotype.
@@ -482,7 +482,9 @@ def get_kernel_x(kernel_x):             ### Return kernel size for x dimension (
     return kernel_x
 def get_kernel_y(kernel_y):             ### Return kernel size for y dimension (not sure why I did this).
     return kernel_y
-def strides():
+def strides_x():
+    return np.random.randint(1,11)
+def strides_y():
     return np.random.randint(1,11)
 def act():                              ### Return random integer between 0 and 10 for layer activation type.
     return np.random.randint(11)
@@ -498,6 +500,12 @@ def kernel_init():                      ### Return random integer between 0 and 
     return np.random.randint(11)
 def dropout_rate():                     ### Return random float between 0 and 1 for the dropout rate.
     return np.random.uniform()
+def pool_size_x():
+    return np.random.randint(1,11)
+def pool_size_y():
+    return np.random.randint(1,11)
+def padding():
+    return np.random.randint(0,2)
 
 '''
 def seed_population(population, seed_file_name):
@@ -533,12 +541,21 @@ def seed_population(init_dir):
     for fil in os.listdir(init_dir):
         file_name = init_dir + '/' + fil
         #print(file_name)
+        chromosome = []
         with open(file_name) as txt_file:
             #lines = [line.strip().strip('[]') for line in txt_file.readlines()
-            lines = [line.strip('[]\n') for line in txt_file.readlines()]
-            lines = [line.split(',') for line in lines]
-            init_population.append( creator.Individual( [convert(val) for sublist in lines for val in sublist] ) )
+            #lines = [line.strip('[]\n') for line in txt_file.readlines()]
+            #lines = [line.split(',') for line in lines]
+            #init_population.append( creator.Individual( [convert(val) for sublist in lines for val in sublist] ) )
+            lines = txt_file.readlines()
             #print(lines)
+            for line in lines:
+                fields = line.split()
+                for field in fields:
+                    #print(field.strip(','))
+                    chromosome.append( convert( field.strip(',') ) )
+            #print(lines)
+        init_population.append( chromosome )
     return init_population
 
 ### Extract training data.
@@ -571,7 +588,8 @@ for n in range(max_num_layers):
     output_dimensionality_str = 'output_dimensionality_' + str(n)
     kernel_x_str = 'kernel_x_' + str(n)
     kernel_y_str = 'kerner_y_' + str(n)
-    strides_str = 'strides_' + str(n)
+    strides_x_str = 'strides_x_' + str(n)
+    strides_y_str = 'strides_y_' + str(n)
     act_str = 'act_' + str(n)
     use_bias_str = 'use_bias_' + str(n)
     bias_init_str = 'bias_init_' + str(n)
@@ -579,7 +597,10 @@ for n in range(max_num_layers):
     act_reg_str = 'act_reg_' + str(n)
     kernel_init_str = 'kernel_init_' + str(n)
     dropout_rate_str = 'dropout_rate_' + str(n)
-    
+    pool_size_x_str = 'pool_size_x_' + str(n)
+    pool_size_y_str = 'pool_size_y_' + str(n)
+    padding_str = 'padding_' + str(n)
+
     toolbox.register(use_layer_str, use_layer)
     toolbox.register(layer_str, layer)
     toolbox.register(output_dimensionality_str, output_dimensionality)
@@ -606,16 +627,29 @@ for n in range(max_num_layers):
 
     toolbox.register(kernel_x_str, get_kernel_x, kernel_x)
     toolbox.register(kernel_y_str, get_kernel_y, kernel_y)
+    toolbox.register(strides_x_str, strides_x)
+    toolbox.register(strides_y_str, strides_y)
     toolbox.register(act_str, act)
-    toolbox.register(strides_str, strides)
     toolbox.register(use_bias_str, use_bias)
     toolbox.register(bias_init_str, bias_init)
     toolbox.register(bias_reg_str, bias_reg)
     toolbox.register(act_reg_str, act_reg)
     toolbox.register(kernel_init_str, kernel_init)
     toolbox.register(dropout_rate_str, dropout_rate)
+    toolbox.register(pool_size_x_str, pool_size_x)
+    toolbox.register(pool_size_y_str, pool_size_y)
+    toolbox.register(padding_str, padding)
 
-    toolbox_ind_str += 'toolbox.' + use_layer_str + ', toolbox.' + layer_str + ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str + ', toolbox.' + kernel_y_str + ', toolbox.' + strides_str + ', toolbox.' + act_str + ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str + ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str + ', toolbox.' + kernel_init_str + ', toolbox.' + dropout_rate_str
+    toolbox_ind_str += 'toolbox.' + use_layer_str + ', toolbox.' + layer_str
+    toolbox_ind_str += ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str
+    toolbox_ind_str += ', toolbox.' + kernel_y_str + ', toolbox.' + strides_x_str
+    toolbox_ind_str += ', toolbox.' + strides_y_str + ', toolbox.' + act_str
+    toolbox_ind_str += ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str
+    toolbox_ind_str += ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
+    toolbox_ind_str += ', toolbox.' + kernel_init_str + ', toolbox.' + dropout_rate_str
+    toolbox_ind_str += ', toolbox.' + pool_size_x_str + ', toolbox.' + pool_size_y_str
+    toolbox_ind_str += ', toolbox.' + padding_str
+
     if n != max_num_layers-1:
         toolbox_ind_str += ", "
 
@@ -843,7 +877,8 @@ def main():
             pickle.dump(fitnesses, fil)
 
     ### Return the final population and final fitnesses.
-    return pop, fitnesses
+    #return pop, fitnesses
+    return pop
 
 if __name__ == '__main__':
     #main()

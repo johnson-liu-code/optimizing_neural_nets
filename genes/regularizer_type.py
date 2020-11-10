@@ -16,9 +16,11 @@ regularizers = [ "bias_regularizer=regularizers.l1({0})".format(x) for x in list
 
 # https://keras.io/layers/core/
 
-reg_types = ["bias_", "activity_"]
-
+reg_types = ["bias_", "activity_", "kernel_"]
 def regularizer_type(reg_type, num):
-    reg = "regularizer=regularizers.l1(" + str(num) + ")"
+    if num == -1:
+        reg = "regularizer=None"
+    else:
+        reg = "regularizer=regularizers.l1(" + str(num) + ")"
     reg = reg_types[reg_type] + reg
     return reg

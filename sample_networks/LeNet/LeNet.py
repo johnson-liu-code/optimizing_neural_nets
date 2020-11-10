@@ -146,7 +146,7 @@ else:
                                      validation_data = (x_train_valid, y_train_valid),
                                      workers = 8,
                                      callbacks = [es],
-                                     verbose = 2 )
+                                     verbose = 1 )
 
     #model.fit_generator(datagen.flow(x_train_train, y_train_train, batch_size = batch_size),
     #                                 steps_per_epoch = 100,
