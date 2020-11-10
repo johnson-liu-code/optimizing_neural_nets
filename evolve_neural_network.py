@@ -226,7 +226,7 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
     #num_of_layers = individual[0]
     #individual_without_first_element = individual[1:] 
 
-    chunks = divide_chunks(individual, 13)
+    chunks = divide_chunks(individual, 17)
     
     #mut_num_of_layers = tools.mutUniformInt([ num_of_layers ], 1, max_num_layers, MUTPB)
 
@@ -394,7 +394,7 @@ def myMutation(individual, original_x_dimension, original_y_dimension):
 def check_kernel_validity(individual, original_x_dimension, original_y_dimension):
     ### Divide chromosome into chunks for each layer.
     #chunks = divide_chunks(individual, 10)
-    chunks = divide_chunks(individual, 13)
+    chunks = divide_chunks(individual, 17)
 
     ### Set previous x and y dimensions equal to the original x and y dimensions.
     ### (the x and y dimensions of the data set before the first layer.)
