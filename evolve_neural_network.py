@@ -95,25 +95,67 @@ if not os.path.isdir( neural_net_dir_number_name ):
 if not os.path.isdir( output_dir_number_name ):
     os.makedirs(output_dir_number_name)
 
+
+
+class layer_class:
+    def __init__( self, expression = 0, layer_type = 0, output_dimensionality = 0,
+                       kernel_x = 0, kernel_y = 0, strides_x = 0, strides_y = 0,
+                       act = 0, use_bias = 0, bias_init = 0, bias_reg = 0,
+                       act_reg = 0, kernel_init = 0, dropout_rate = 0,
+                       pool_size_x = 0, pool_size_y = 0, padding = 0 ):
+
+        self.expression = expression
+        self.layer_type = layer_type
+        self.output_dimensionality = output_dimensionality
+        self.kernel_x = kernel_x
+        self.kernel_y = kernel_y
+        self.strides_x = strides_x
+        self.strides_y = strides_y
+        self.act = act
+        self.use_bias = use_bias
+        self.bias_init = bias_init
+        self.bias_reg = bias_reg
+        self.act_reg = act_reg
+        self.kernel_init = kernel_init
+        self.dropout_rate = dropout_rate
+        self.pool_size_x = pool_size_x
+        self.pool_size_y = pool_size_y
+        self.padding = padding
+
+    def set_attribute(self, attribute, value):
+        setattr(self, attribute, value)
+
+    def get_attribute(self, attribute):
+        return getattr(self, attribute)
+
+    @property
+    def get_attributes(self):
+        return self.__dict__
+
+
 ### Get the fitness of an individual.
 def evaluate( individual, i, g ):
     ### Convert genotype to phenotype.
     phenotype_list = []
     num_layers = len(individual)
-    zero_layers = 0                     ### Keep track of how many empty layers ('0' layers) there are in the network.
+    zero_layers = 0                      ### Keep track of how many empty layers ('0' layers) there are in the network.
     for n, layer in enumerate( individual ):
-        if layer[0] == 1:               ### If chunk[0] == 1, this layer is an expressed chromosome.
+        ### If layer.expression == 1, this layer is an expressed chromosome.
+        if layer.expression == 1:
             phenotype = get_phenotype( layer )
 
-        elif layer[0] == 2:             ### If chunk[0] == 2, this layer is a dropout layer.
-            phenotype = 'model.add( Dropout({}) )'.format( layer[12] )
+        ### If layer.expression == 2, this layer is a dropout layer.
+        elif layer.expression == 2:
+            phenotype = 'model.add( Dropout({}) )'.format( layer.dropout_rate )
 
-        elif layer[0] == 3:             ### If chunk[0] == 3, this layer is a flatten layer.
+        ### If layer.expression == 3, this layer is a flatten layer.
+        elif layer.expression == 3:
             phenotype = 'model.add( Flatten() )'
 
-        else:                           ### If chunk[0] == 0, this layer is an empty layer.
+        ### If layer.expression == 0, this layer is an empty ayer.
+        elif layer.expression == 0:
             zero_layers += 1
-            phenotype = '### --- empty layer --- ###'
+            phenotype = '##### ----- EMPTY LAYER ----- #####'
 
         phenotype_list.append( phenotype )        ### List of layers in text format.
 
@@ -194,125 +236,168 @@ def evaluate( individual, i, g ):
 
         ### Collect the fitness values.
         #fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-        fitness = ( accuracy, inverse_loss )
+        fitness = [ accuracy, inverse_loss ]
 
     ### Return fitness of 0 if the neural network file did not complete a run for whatever reason.
     else:
-       fitness = [0, 0]
+       fitness = [ 0, 0 ]
 
     ### Return the fitness value for the individual..
     return fitness
 
 ### Define how individuals mutate.
-def Mutation( individual, original_x_dimension, original_y_dimension ):
+def Mutation( individual, x_dimension_length, y_dimension_length ):
     ### Start a list to hold the mutated layers.
     mutated_individual = []
 
-    ### Iterate over the layers of the individual..
+    ### Iterate over the layers of the individual.
     for c, layer in enumerate( individual ):
         ### Mutate chromosome (layer) expression. The possible values are 0 (not expressed), 1 (expressed), 2 (dropout layer), 3 (flatten).
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
             ### If the layer is the first layer, we must have it expressed as an actual layer (instead of empty, flatten, or dropout).
             if c != 0:
-                layer[0] = np.random.randint( 3 )
+                layer.expression = np.random.randint( 3 )
             else:
-                layer[0] = 1
+                layer.expression = 1
 
         ### Mutate layer type. The value is in the range 0:5 (inclusive).
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[1] = np.random.randint( 6 )
+            layer.layer_type = np.random.randint( 6 )
 
         ### Mutate the output dimensionality.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[2] = int( np.random.normal( layer[2], 1 ) )
+            layer.output_dimensionality = int( np.random.normal( layer.output_dimensionality, 1 ) )
 
             ### Turn the output dimension to 2 if it is less than 2. This could be changed later.
             ### CHANGE THIS
-            if layer[2] < 2:
-                layer[2] = 2
+            if layer.output_dimensionality < 2:
+                layer.output_dimensionality = 2
 
-        ### Mutate kernel x number. (This is expressed as a fraction of the x dimension length.)
+        ### Mutate kernel x length.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[3] = np.random.normal( layer[3], .1 )
-
-        ### Mutate kernel y number. (This is expressed as a fraction of the y dimension length.)
-        r = np.random.uniform( 0, 1 )
-        if r <= mutation_probability:
-            layer[4] = np.random.normal( layer[4], .1 )
-
-        ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
-        if layer[3] < 0:
-            layer[3] = 0
-        elif layer[3] > 1:
-            layer[3] = 1
-
-        if layer[4] < 0:
-            layer[4] = 0
-            
-        elif layer[4] > 1:
-            layer[4] = 1
-
-        ### Mutate the stride length.
-        r = np.random.uniform( 0, 1 )
-        if r <= mutation_probability:
-            ratio = float( layer[5] ) / original_x_dimension
+            kernel_x_length = layer.kernel_x
+            ratio = float(kernel_x_length) / x_dimension_length
             new_ratio = np.random.normal( ratio, .1 )
+            ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
+            if ratio < 0:
+                ratio = 0
+            elif ratio > 1:
+                ratio = 1
+            new_kernel_x_length = int( new_ratio * x_dimension_length )
 
+            layer.kernel_x = new_kernel_x_length
+
+        ### Mutate kernel y length.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            kernel_y_length = layer.kernel_y
+            ratio = float(kernel_y_length) / y_dimension_length
+            new_ratio = np.random.normal( ratio, .1 )
+            ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
+            if new_ratio < 0:
+                new_ratio = 0
+            elif new_ratio > 1:
+                new_ratio = 1
+            new_kernel_y_length = int( new_ratio * y_dimension_length )
+
+            layer.kernel_y = new_kernel_y_length
+
+        ### Mutate the stride length in the x dimension.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            strides_x_length = layer.strides_x
+            ratio = float(strides_x_length) / x_dimension_length
+            new_ratio = np.random.normal( ratio, .1 )
             if new_ratio > 1:
                 new_ratio = 1
+            elif new_ratio < 0:
+                new_ratio = .1
 
-            layer[5] = int( new_ratio * original_x_dimension )
+            new_strides_x_length = int( new_ratio * x_dimension_length )
+
+        ### Mutate the stride length in the y dimension.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            strides_y_length = layer.strides_y
+            ratio = float(strides_y_length) / y_dimension_length
+            new_ratio = np.random.normal( ratio, .1 )
+            if new_ratio > 1:
+                new_ratio = 1
+            elif new_ratio < 0:
+                new_ratio = .1
+
+            new_strides_y_length = int( new_ratio * y_dimension_length )
 
         ### Mutate activation type.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[6] = np.random.randint( 0, 11 )
+            layer.act = np.random.randint( 0, 11 )
 
         ### Mutate use bias.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[7] = np.random.randint( 0, 2 )
+            layer.use_bias = np.random.randint( 0, 2 )
 
         ### Mutate bias initializer.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[8] = np.random.randint( 0, 11 )
+            layer.bias_init = np.random.randint( 0, 11 )
 
         ### Mutate bias regularizer.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[9] = np.random.normal( layer[9], .1 )
-            if layer[9] < 1:
-                layer[9] = 1
-            elif layer[9] < -1:
-                layer[9] = -1
+            new_bias_reg = np.random.normal( layer.bias_reg, .1 )
+            if new_bias_reg > 1:
+                new_bias_reg = 1
+            elif new_bias_reg < -1:
+                new_bias_reg = -1
+            layer.bias_reg = new_bias_reg
 
         ### Mutate activity regularizer.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[10] = np.random.normal( layer[10], .1 )
-            if layer[10] > 1:
-                layer[10] = 1
-            elif layer[10] < -1:
-                layer[10] = -1
+            #layer[11] = np.random.normal( layer[11], .1 )
+            new_act_reg = np.random.normal( layer.act_reg, .1 )
+            if new_act_reg > 1:
+                new_act_reg = 1
+            elif new_act_reg < -1:
+                new_act_reg = -1
+            layer.act_reg = new_act_reg
 
         ### Mutate kernel initializer.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[11] = np.random.randint( 0, 11 )
+            layer.kernel_init = np.random.randint( 0, 11 )
 
         ### Mutate dropout rate.
-        r = np.random.uniform( 0,1 )
+        r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer[12] = np.random.normal( layer[12], .1 )
-        if layer[12] > 1:
-            layer[12] = 1
-        elif layer[12] < 0:
-            layer[12] = 0
+            new_dropout_rate = np.random.normal( layer.dropout_rate, .1 )
+            if new_dropout_rate > 1:
+                new_dropout_rate = 1
+            elif new_dropout_rate < 0:
+                new_dropout_rate = 0
+            layer.dropout_rate = new_dropout_rate
+
+        ### Mutate pool length in the x dimension.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            #layer[14] = np.random.randint( 1, 11 )
+            layer.pool_size_x = np.random.randint( 1, 11 )
+
+        ### Mutate pool length in the y dimension.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            layer.pool_size_y = np.random.randint( 1, 11 )
+
+        ### Mutate padding type.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            layer.padding = np.random.randint( 0, 2 )
 
         ### Add the new mutated layer to the list representing the mutated individual.
         mutated_individual.append( layer )
@@ -337,8 +422,10 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
 
     ### Iterate over the layers.
     for layer in individual:
-        kernel_x = layer[3]
-        kernel_y = layer[4]
+        #kernel_x_length = layer[3]
+        #kernel_y_length = layer[4]
+        kernel_x_length = layer.kernel_x
+        kernel_y_length = layer.kernel_y
 
         ### Check if the kernal size is greater than the dimension size. The kernel size
         ###     needs to be less than or equal to the dimension size minus 1 (for stride = 1).
@@ -347,45 +434,39 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
         ###     take the floor of [that number times the dimension size]. This gives a kernal size
         ###     that is less than the dimension size.
 
-        if kernel_x > previous_x_dimension - 1:
+        if kernel_x_length > previous_x_dimension - 1:
             kernel_x_ratio = np.random.uniform( 0, 1 )
-            kernel_x = int( math.floor( kernel_x_ratio * previous_x_dimension ) )
+            kernel_x_length = int( math.floor( kernel_x_ratio * previous_x_dimension ) )
 
-        if kernel_y > previous_y_dimension - 1:
+        if kernel_y_length > previous_y_dimension - 1:
             kernel_y_ratio = np.random.uniform( 0, 1 )
-            kernel_y = int( math.floor( kernel_y_ratio * previous_y_dimension ) )
+            kernel_y_length = int( math.floor( kernel_y_ratio * previous_y_dimension ) )
 
-        ### Check if the kernal size is less than 1. If so, change the size to be equal to 1.
-        if kernel_x < 1:
-            kernel_x = 1
-        if kernel_y < 1:
-            kernel_y = 1
+        ### Check if the kernel length is less than 1. If so, change the size to be equal to 1.
+        if kernel_x_length < 1:
+            kernel_x_length = 1
+        if kernel_y_length < 1:
+            kernel_y_length = 1
 
         ### New dimension size is the old dimension size minus the quantity
-        ### kernel size minus 1.
+        ###     kernel size minus 1.
 
-        previous_x_dimension -= (kernel_x - 1)
-        previous_y_dimension -= (kernel_y - 1)
-
-        ### Check if the kernel size is less than 1. If so, set the kernel
-        ### size to be equal to 1.
+        previous_x_dimension -= (kernel_x_length - 1)
+        previous_y_dimension -= (kernel_y_length - 1)
 
         if previous_x_dimension < 1:
             previous_x_dimension = 1
-            kernel_x = 1
+            kernel_x_length = 1
 
         if previous_y_dimension < 1:
             previous_y_dimension = 1
-            kernel_y = 1
+            kernel_y_length = 1
 
         ### Save the new, valid kernel sizes to the chunk (layer).
-        if kernel_x < 1:
-            kernel_x = 1
-        if kernel_y < 1:
-            kernel_y = 1
-
-        layer[3] = int( math.floor( kernel_x ) )
-        layer[4] = int( math.floor( kernel_y ) )
+        #layer[3] = int( math.floor( kernel_x_length ) )
+        #layer[4] = int( math.floor( kernel_y_length ) )
+        layer.kernel_x = int( math.floor( kernel_x_length ) )
+        layer.kernel_y = int( math.floor( kernel_y_length ) )
 
         ### Save modified chunk to the new chromosome.
         modified_individual.append( layer )
@@ -395,7 +476,7 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
 
     return modified_individual
 
-def use_layer():                        ### Return 0 (skip layer), 1 (use layer), 2 (dropout layer), 3 (flatten layer).
+def expression():                        ### Return 0 (skip layer), 1 (use layer), 2 (dropout layer), 3 (flatten layer).
     return np.random.randint(0, 3)
 
 def layer_type():                       ### Return random integer between 0 and 5 for layer type.
@@ -404,11 +485,15 @@ def layer_type():                       ### Return random integer between 0 and 
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     return np.random.randint(2, 101)
 
-def get_kernel_x():                     ### Return kernel size for x dimension.
-    return np.random.randint(2, 10)
+def get_kernel_x(x_dimension_length):
+#def get_kernel_x():                    ### Return kernel size for x dimension (THIS IS NOT RIGHT --> as a fraction of the dimension length).
+                                        ###    The kernel length is an integer in the actual chromosome. When doing mutations, the ratio is
+                                        ###    computed using the kernel length and the dimension length of the current layer.
+    return np.random.randint(1, x_dimension_length + 1)
 
-def get_kernel_y():                     ### Return kernel size for y dimension.
-    return np.random.randint(2, 10)
+def get_kernel_y(y_dimension_length):
+#def get_kernel_y():                    ### Return kernel size for y dimension (SEE ABOVE --> as a fraction of the dimension length).
+    return np.random.randint(1, y_dimension_length + 1)
 
 def strides_x():
     return np.random.randint(1, 11)
@@ -447,12 +532,13 @@ def padding():
     return np.random.randint(0, 2)
 
 
-def generate_individual(num_layers):
+def generate_individual(num_layers, x_dimension_length, y_dimension_length):
     individual = []
     for n in range(num_layers):
-        layer = [ use_layer(), layer_type(), output_dimensionality(), get_kernel_x(), get_kernel_y(),
-                  strides_x(), strides_y(), act(), use_bias(), bias_init(), bias_reg(), act_reg(),
-                  kernel_init(), dropout_rate(), pool_size_x(), pool_size_y(), padding() ]
+        layer = layer_class( expression(), layer_type(), output_dimensionality(), get_kernel_x(x_dimension_length),
+                  get_kernel_y(y_dimension_length), strides_x(), strides_y(), act(), use_bias(),
+                  bias_init(), bias_reg(), act_reg(), kernel_init(), dropout_rate(), pool_size_x(),
+                  pool_size_y(), padding() )
 
         individual.append( layer )
 
@@ -477,11 +563,18 @@ def seed_population(initial_population_directory):
             lines = txt_file.readlines()
 
             for line in lines:
-                layer = []
+                converted_fields = []
                 fields = line.split()
 
                 for field in fields:
-                    layer.append( convert( field.strip(',') ) )
+                    field = convert( field.strip(',') )
+                    converted_fields.append( field )
+
+                layer = layer_class( converted_fields[0],  converted_fields[1],  converted_fields[2],  converted_fields[3],
+                                     converted_fields[4],  converted_fields[5],  converted_fields[6],  converted_fields[7],
+                                     converted_fields[8],  converted_fields[9],  converted_fields[10], converted_fields[11],
+                                     converted_fields[12], converted_fields[13], converted_fields[14], converted_fields[15],
+                                     converted_fields[16] )
 
                 chromosome.append( layer )
 
@@ -495,11 +588,17 @@ def crossover(parent1, parent2, crossover_probability):
     child1 = list(parent1)
     child2 = list(parent2)
 
+    attributes = parent1[0].get_attributes
+
     for m, layer in enumerate(parent1):
-        for n, element in enumerate(parent1[0]):
+        for attribute in attributes:
             r = np.random.uniform(0, 1)
             if r <= crossover_probability:
-                child1[m][n], child2[m][n] = child2[m][n], child1[m][n]
+                attribute1 = parent1[m].get_attribute(attribute)
+                attribute2 = parent2[m].get_attribute(attribute)
+
+                child1[m].set_attribute(attribute, attribute2)
+                child2[m].set_attribute(attribute, attribute1)
 
     return child1, child2
 
@@ -514,16 +613,17 @@ previous_x_dimension = original_x_dimension
 previous_y_dimension = original_y_dimension
 
 
-creator.create('FitnessMax', base.Fitness, weights=(1., 1.))
-creator.create('Individual', list, fitness=creator.FitnessMax)
+creator.create( 'FitnessMax', base.Fitness, weights = (1., 1.) )
+creator.create( 'Individual', list, fitness = creator.FitnessMax, ID = 0 )
+
 
 toolbox = base.Toolbox()
 ### Create a string of a command to be executed to register a 'type' of individual.
 toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, ("
 
-### Iterate over the number of layers and append to string to be executed.
+### Iterate over the number of layers and append to the string to be executed.
 for n in range(max_num_layers):
-    use_layer_str = 'use_layer_' + str(n)
+    expression_str = 'expression_' + str(n)
     layer_str = 'layer_type_' + str(n)
     output_dimensionality_str = 'output_dimensionality_' + str(n)
     kernel_x_str = 'kernel_x_' + str(n)
@@ -541,29 +641,9 @@ for n in range(max_num_layers):
     pool_size_y_str = 'pool_size_y_' + str(n)
     padding_str = 'padding_' + str(n)
 
-    toolbox.register(use_layer_str, use_layer)
+    toolbox.register(expression_str, expression)
     toolbox.register(layer_str, layer_type)
     toolbox.register(output_dimensionality_str, output_dimensionality)
-
-    kernel_x_ratio = np.random.uniform(0, 1)
-    kernel_x = int(math.floor(kernel_x_ratio * previous_x_dimension))
-    kernel_y_ratio = np.random.uniform(0, 1)
-    kernel_y = int(math.floor(kernel_y_ratio * previous_y_dimension))
-
-    if kernel_x < 1:
-        kernel_x = 1
-    if kernel_y < 1:
-        kernel_y = 1
-
-    previous_x_dimension -= (kernel_x - 1)
-    previous_y_dimension -= (kernel_y - 1)
-
-    if previous_x_dimension < 1:
-        previous_x_dimension = 1
-        kernel_x = 1
-    if previous_y_dimension < 1:
-        previous_y_dimension = 1
-        kernel_y = 1
 
     toolbox.register( kernel_x_str, get_kernel_x )
     toolbox.register( kernel_y_str, get_kernel_y )
@@ -580,7 +660,7 @@ for n in range(max_num_layers):
     toolbox.register( pool_size_y_str, pool_size_y )
     toolbox.register( padding_str, padding )
 
-    toolbox_ind_str += 'toolbox.' + use_layer_str + ', toolbox.' + layer_str
+    toolbox_ind_str += 'toolbox.' + expression_str + ', toolbox.' + layer_str
     toolbox_ind_str += ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str
     toolbox_ind_str += ', toolbox.' + kernel_y_str + ', toolbox.' + strides_x_str
     toolbox_ind_str += ', toolbox.' + strides_y_str + ', toolbox.' + act_str
@@ -598,14 +678,11 @@ toolbox_ind_str += "), n=1)"
 ### Execute string to register individual type.
 exec(toolbox_ind_str)
 
-### Register population, mate, mutate, select, and evaluate functions.
+### Register population, mutate, and select functions.
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-toolbox.register('mate', tools.cxTwoPoint)
-# THIS ISN'T WORKING toolbox.register('mate', tools.cxUniform, crossover_probability)
+# THIS ISN'T WORKING --> toolbox.register('mate', tools.cxUniform, crossover_probability)
 toolbox.register('mutate', Mutation)
 toolbox.register('select', tools.selNSGA2)
-toolbox.register('population_guess', seed_population, initial_population_directory)
-
 
 def main():
     print('\n... Running genetic algorithm on neural networks ...\n')
@@ -618,23 +695,22 @@ def main():
     ### Number of individuals (parents) to clone for the next generation. Specified in inFile.txt.
     print('selection_size (number of parents): {}'.format( selection_size ) )
 
-    ### Number of individuals made through crossing of selected parents. Specified in inFile.txt.
-    #print('crossover_size (number of children generated): {}'.format( crossover_size ) )
+    ### Number of individuals made through crossing of selected parents. Same as the number of parents.
+    crossover_size = selection_size
+    print('crossover_size (number of children generated, same as the number of parents): {}'.format( crossover_size ) )
 
-    ### Number of immigrants. Specified in inFile.txt.
-    #print('random_size (number of immigrants ... new randomly created individuals): {}'.format( random_size ) )
-
+    ### Number of immigrants. Computed from the population size minus the amount of parents plus the amount of children.
     migrant_size = population_size - 2 * selection_size
     print('migrant_size: {}'.format( migrant_size ) )
 
     ### Mutation probability. Specified in inFile.txt.
-    print('mutation_probability (mutation probability): {}'.format( mutation_probability ) )
+    print('mutation_probability (for each gene): {}'.format( mutation_probability ) )
 
     ### Crossover probability (for uniform crossover). Specified in inFile.txt.
-    print('crossover_probability (crossover probability ... for uniform crossover): {}'.format( crossover_probability ) )
+    print('crossover_probability (for each gene, for uniform crossover): {}'.format( crossover_probability ) )
 
     ### Number of generations.Specified in inFile.txt.
-    print('number_of_generations (number of generations): {}'.format( number_of_generations ) )
+    print('number_of_generations: {}'.format( number_of_generations ) )
 
     ### Set up the initial population.
     ###     Write 'FALSE' in inFile.txt for initialize with a random population.
@@ -642,18 +718,29 @@ def main():
     false_list = ['FALSE', 'false', 'False']
 
     if initial_population_directory not in false_list:
-        temp_pop = toolbox.population_guess()
+        ### Generate initial set of individuals from the directory containing the zero-th generation of individuals.
+        temp_pop = seed_population( initial_population_directory )
 
-        remaining_pop_to_initialize = population_size - len(temp_pop)
-        remaining_pop = [ generate_individual( max_num_layers ) for i in range( remaining_pop_to_initialize ) ]
+        ### Fill the remaining spots available for more individuals.
+        remaining_pop_to_initialize = population_size - len( temp_pop )
+        remaining_pop = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for i in range( remaining_pop_to_initialize ) ]
 
+        ### Merge these two populations together.
         temp_pop = temp_pop + remaining_pop
     else:
-        temp_pop = [ generate_individual( max_num_layers ) for i in range( population_size ) ]
+        ### If an initial population directory is not used, randomly generate all individuals.
+        temp_pop = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for i in range( population_size ) ]
+
+    ### ID numbers are used to keep track of individuals.
+    ID = 0
 
     pop = []
     for ind in temp_pop:
         x = creator.Individual(ind)
+        print('x: {}'.format(x))
+        x.ID = ID                         ### Assign ID number to individual.
+        ID += 1                           ### Increment the ID number.
+        print('x.ID: {}'.format(x.ID))
         pop.append(x)
 
     print('\n\nInitial population ...')
@@ -672,8 +759,8 @@ def main():
     pool.join()
 
     ### Save fitness values to individuals.
-    for ind, fit in zip( pop, fitnesses ):
-        ind.fitness.values = fit
+    for ind, fitness in zip( pop, fitnesses ):
+        ind.fitness.values = fitness
 
     ### Create directory to save the data for the 0th generation.
     generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
@@ -691,7 +778,7 @@ def main():
         pickle.dump(fitnesses, fil)
 
     ### Iterate over the generations.
-    for g in range(1, number_of_generations):
+    for g in range( 1, number_of_generations ):
         ### Select the parents.
         selected_parents = toolbox.select( pop, selection_size )
 
@@ -702,23 +789,34 @@ def main():
         ### Mate the parents to form new individuals (children).
         for i in range( 0, selection_size, 2 ):
             #print(i)
-            print('parent1: {}\nparent2: {}\n'.format(selected_parents[i], selected_parents[i+1]))
-            child1, child2 = crossover(selected_parents[i], selected_parents[i+1], crossover_probability)
-            print('child1: {}\nchild2: {}\n'.format(child1, child2))
+            print('parent1: {}\nparent2: {}\n'.format( selected_parents[i], selected_parents[i+1] ) )
 
-            child1 = creator.Individual(child1)
-            child2 = creator.Individual(child2)
+            child1, child2 = crossover( selected_parents[i], selected_parents[i+1], crossover_probability )
+
+            print('child1: {}\nchild2: {}\n'.format(child1, child2 ) )
 
             new_children.append(child1)
             new_children.append(child2)
 
-        migrants = [ creator.Individual( generate_individual( max_num_layers ) ) for m in range( migrant_size ) ]
+        ### Mutate the newly generated children.
+        print('\nMutating the new population (selected parents and their children) ...')
+        for m, individual in enumerate( new_children ):
+            mutated_ind = toolbox.mutate( individual, original_x_dimension, original_y_dimension )
+            new_children[m] = mutated_ind
+
+        ### Add migrants to the new population.
+        print('\nAdding randomly generated migrants to the new population ...')
+        migrants = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for m in range( migrant_size ) ]
 
         new_population = new_children + migrants
-        new_population = [ check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population ]
+
+        ### Check the kernel validity of the individuals in the new population.
+        new_population = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in new_population ]
 
         index = range( selection_size, population_size )
+        generation = [ g for x in range( len( new_population ) ) ]
 
+        ### Run the neural networks of the new individuals to compute their fitness.
         pool = ThreadPool( len(new_population) )
 
         new_fitnesses = pool.starmap( evaluate, zip(new_population, index, generation) )
@@ -726,53 +824,12 @@ def main():
         pool.close()
         pool.join()
  
-        ### New population consists of selected parents and their children.
-        new_population = selected_parents + new_children
-
-        ### Mutate the new population.
-        print('\nMutating the new population (selected parents and their children) ...')
-
-        for m, mutant in enumerate(new_population):
-            r = np.random.uniform(0, 1)
-            if r <= mutation_probability:
-                mutated_ind = toolbox.mutate(mutant, original_x_dimension, original_y_dimension)
-                del mutated_ind.fitness.values
-                new_population[m] = mutated_ind
-
-        ### Add migrants to the new population.
-        #print('\nAdding randomly generated migrants to the new population ...')
-
-        #new_random_migrants = toolbox.population(n = random_size)
-        #for m in new_random_migrants:
-        #    print('migrant: ', m)
-        
-        #new_population = new_population + new_random_migrants
-
-        ### Check the kernel validity of the new population.
-        new_population = [check_kernel_validity(ind, original_x_dimension, original_y_dimension) for ind in new_population]
-
-        #fitnesses = list( map(toolbox.evaluate, new_population) )
-        #fitnesses = [evaluate(ind, i, g) for i, ind in enumerate(new_population)]
-
-        #index = np.arange( population_size )
-
-        generation = [ g for x in range( population_size ) ]
-
-        pool = ThreadPool( population_size )
-
-        fitnesses = pool.starmap( evaluate, zip(pop, index, generation) )
-
-        pool.close()
-        pool.join()
-
-        for ind, fit in zip(new_population, fitnesses):
-            ind.fitness.values = fit
+        ### Assign the fitnesses to the new individuals.
+        for ind, fitness in zip( new_population, new_fitnesses ):
+            ind.fitness.values = fitness
 
         ### Set pop to be the new population.
-        pop = new_population
-
-        #for p in pop:
-        #    p[0] = 1
+        pop = selected_parents + new_population
 
         print('\nFinal new population in Generation {}...'.format(g) )
         for c, i in enumerate(pop):
@@ -794,13 +851,11 @@ def main():
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
 
-
         print(fitnesses)
 
     ### Return the final population and final fitnesses.
     return pop, fitnesses
-    #return pop
+
 
 if __name__ == '__main__':
-    #main()
     pop, fitnesses = main()
