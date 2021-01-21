@@ -1,10 +1,10 @@
-#model.add(Flatten())
-#model.add(Dense(num_classes, activation='softmax') )
+model.add(Flatten())
+model.add(Dense(num_classes, activation='softmax') )
 
 # rmsprop doesn't seem to work.
 # AttributeError: module 'keras.optimizers' has no attribute 'rmsprop'
-#opt = keras.optimizers.rmsprop(lr=0.01, decay=1e-6)
-opt = keras.optimizers.SGD(lr = .01, decay=1e-6)
+#opt = keras.optimizers.rmsprop(lr =0.01, decay = 1e-6)
+opt = keras.optimizers.SGD(lr = 0.01, decay = 1e-6)
 
 es = keras.callbacks.EarlyStopping(monitor = 'val_loss', verbose = 1)
 

@@ -134,11 +134,13 @@ class layer_class:
 
 
 ### Get the fitness of an individual.
-def evaluate( individual, i, g ):
+def evaluate( individual, g ):
+    ID = individual.ID
+
     ### Convert genotype to phenotype.
     phenotype_list = []
     num_layers = len(individual)
-    zero_layers = 0                      ### Keep track of how many empty layers ('0' layers) there are in the network.
+    #zero_layers = 0                      ### Keep track of how many empty layers ('0' layers) there are in the network.
     for n, layer in enumerate( individual ):
         ### If layer.expression == 1, this layer is an expressed chromosome.
         if layer.expression == 1:
@@ -154,99 +156,99 @@ def evaluate( individual, i, g ):
 
         ### If layer.expression == 0, this layer is an empty ayer.
         elif layer.expression == 0:
-            zero_layers += 1
+            #zero_layers += 1
             phenotype = '##### ----- EMPTY LAYER ----- #####'
 
         phenotype_list.append( phenotype )        ### List of layers in text format.
 
     ### Check to make sure there are non-empty layers.
-    if zero_layers != num_layers:
-        ### Create directories to store the neural networks and the output from the genetic algorithm.
-        neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
-        output_directory_name = 'output_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
+    #if zero_layers != num_layers:
+    ### Create directories to store the neural networks and the output from the genetic algorithm.
+    neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
+    output_directory_name = 'output_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
 
-        neural_net_generation_dir_name = neural_net_directory_name + 'generation_{0:05d}/'.format( g )
-        output_generation_dir_name = output_directory_name + 'generation_{0:05d}/'.format( g )
+    neural_net_generation_dir_name = neural_net_directory_name + 'generation_{0:05d}/'.format( g )
+    output_generation_dir_name = output_directory_name + 'generation_{0:05d}/'.format( g )
 
-        ### Create directories if they do not exist.
-        if not os.path.isdir( neural_net_generation_dir_name ):
-            try:
-                os.makedirs( neural_net_generation_dir_name )
-            except:
-                pass
-
-        if not os.path.isdir( output_generation_dir_name ):
-            try:
-                os.makedirs( output_generation_dir_name )
-            except:
-                pass
-
-        ### Specific name for neural network file and output file.
-        run_file_name = neural_net_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_neural_net.py'.format( year, month, day, i )
-        output_file_name = output_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_output.txt'.format( year, month, day, i )
-
-        ### Open neural network file and write in some lines.
-        with open( run_file_name, 'w' ) as run_file:
-            run_file.write( 'batch_size = ' + str(batch_size) + '\n')
-            run_file.write( 'number_of_classes = ' + str(number_of_classes) + '\n')
-            run_file.write( 'epochs = ' + str(epochs) + '\n')
-            ### Write top wrapper to file.
-            for line in top_lines:
-                run_file.write( line.split('\n')[0] + '\n')
-
-            ### Write phenotype to file.
-            for phenotype in phenotype_list:
-                #print('phenotype: ', phenotype)
-                run_file.write( phenotype + '\n' )
-
-            ### Write bottom wrapper to file.
-            for line in bot_lines:
-                run_file.write( line.split('\n')[0] + '\n' )
-    
-        ### Save time at which the job was started.
-        #start = time.time()
-
-        ### Start the job.
-        proc = subprocess.Popen( ['python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-
-        ### Save time at which the job ended.
-        #end = time.time()
-
-        ### Compute the runtime of the job.
-        #duration = end-start
-
-        ### Compute the duration fitness based on how long it took to run the job.
-        #inverse_duration = 1./duration
-
-        ### Capture the output of the job.
-        out = proc.communicate()[0].decode( 'utf-8' )
-
-        ### Compute inverse loss.
+    ### Create directories if they do not exist.
+    if not os.path.isdir( neural_net_generation_dir_name ):
         try:
-            inverse_loss = 1./float( out.upper().split()[-7] )
-
-            ### Get the accuracy.
-            accuracy = float( out.upper().split()[-5] )
+            os.makedirs( neural_net_generation_dir_name )
         except:
-            inverse_loss = 100
-            accuracy = 0
+            pass
 
-        #inverse_mem = 1./float(out.upper().split()[-3])
-        #inverse_cpu = 1./float(out.upper().split()[-1])
+    if not os.path.isdir( output_generation_dir_name ):
+        try:
+            os.makedirs( output_generation_dir_name )
+        except:
+            pass
 
-        ### Collect the fitness values.
-        #fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-        fitness = [ accuracy, inverse_loss ]
+    ### Specific name for neural network file and output file.
+    run_file_name = neural_net_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_neural_net.py'.format( year, month, day, ID )
+    output_file_name = output_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_output.txt'.format( year, month, day, ID )
+
+    ### Open neural network file and write in some lines.
+    with open( run_file_name, 'w' ) as run_file:
+        run_file.write( 'batch_size = ' + str(batch_size) + '\n')
+        run_file.write( 'number_of_classes = ' + str(number_of_classes) + '\n')
+        run_file.write( 'epochs = ' + str(epochs) + '\n')
+        ### Write top wrapper to file.
+        for line in top_lines:
+            run_file.write( line.split('\n')[0] + '\n')
+
+        ### Write phenotype to file.
+        for phenotype in phenotype_list:
+            #print('phenotype: ', phenotype)
+            run_file.write( phenotype + '\n' )
+
+        ### Write bottom wrapper to file.
+        for line in bot_lines:
+            run_file.write( line.split('\n')[0] + '\n' )
+    
+    ### Save time at which the job was started.
+    #start = time.time()
+
+    ### Start the job.
+    proc = subprocess.Popen( ['python3.6', run_file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+
+    ### Save time at which the job ended.
+    #end = time.time()
+
+    ### Compute the runtime of the job.
+    #duration = end-start
+
+    ### Compute the duration fitness based on how long it took to run the job.
+    #inverse_duration = 1./duration
+
+    ### Capture the output of the job.
+    out = proc.communicate()[0].decode( 'utf-8' )
+
+    ### Compute inverse loss.
+    try:
+        inverse_loss = 1./float( out.upper().split()[-7] )
+
+        ### Get the accuracy.
+        accuracy = float( out.upper().split()[-5] )
+    except:
+        inverse_loss = 100
+        accuracy = 0
+
+    #inverse_mem = 1./float(out.upper().split()[-3])
+    #inverse_cpu = 1./float(out.upper().split()[-1])
+
+    ### Collect the fitness values.
+    #fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
+    fitness = [ accuracy, inverse_loss ]
 
     ### Return fitness of 0 if the neural network file did not complete a run for whatever reason.
-    else:
-       fitness = [ 0, 0 ]
+    #else:
+    #   fitness = [ 0, 0 ]
 
     ### Return the fitness value for the individual..
     return fitness
 
 ### Define how individuals mutate.
-def Mutation( individual, x_dimension_length, y_dimension_length ):
+def mutation( individual, x_dimension_length, y_dimension_length ):
     ### Start a list to hold the mutated layers.
     mutated_individual = []
 
@@ -600,7 +602,11 @@ def crossover(parent1, parent2, crossover_probability):
                 child1[m].set_attribute(attribute, attribute2)
                 child2[m].set_attribute(attribute, attribute1)
 
+                #child1[m].type = 'CHILD'
+                #child2[m].type = 'CHILD'
+
     return child1, child2
+
 
 ### Extract training data.
 with open('../x_train.pkl', 'rb') as pkl_file:
@@ -614,7 +620,7 @@ previous_y_dimension = original_y_dimension
 
 
 creator.create( 'FitnessMax', base.Fitness, weights = (1., 1.) )
-creator.create( 'Individual', list, fitness = creator.FitnessMax, ID = 0 )
+creator.create( 'Individual', list, fitness = creator.FitnessMax, ID = 0, type = 'NA' )
 
 
 toolbox = base.Toolbox()
@@ -681,7 +687,7 @@ exec(toolbox_ind_str)
 ### Register population, mutate, and select functions.
 toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 # THIS ISN'T WORKING --> toolbox.register('mate', tools.cxUniform, crossover_probability)
-toolbox.register('mutate', Mutation)
+toolbox.register('mutate', mutation)
 toolbox.register('select', tools.selNSGA2)
 
 def main():
@@ -703,7 +709,7 @@ def main():
     migrant_size = population_size - 2 * selection_size
     print('migrant_size: {}'.format( migrant_size ) )
 
-    ### Mutation probability. Specified in inFile.txt.
+    ### mutation probability. Specified in inFile.txt.
     print('mutation_probability (for each gene): {}'.format( mutation_probability ) )
 
     ### Crossover probability (for uniform crossover). Specified in inFile.txt.
@@ -753,7 +759,7 @@ def main():
 
     pool = ThreadPool( population_size )
 
-    fitnesses = pool.starmap( evaluate, zip(pop, index, generation) )
+    fitnesses = pool.starmap( evaluate, zip(pop, generation) )
 
     pool.close()
     pool.join()
@@ -767,20 +773,30 @@ def main():
     if not os.path.isdir(generation_dir_name):
         os.makedirs(generation_dir_name)
 
+    '''
     ### Save the population of the 0th generation.
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.pkl'.format(year, month, day, next_dir_number)
     with open(generation_population_file_name, 'wb') as fil:
         pickle.dump(pop, fil)
-
     ### Save the fitnesses of the 0th generation.
     generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_fitness.pkl'.format(year, month, day, next_dir_number)
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
+    '''
+
+    generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format(year, month, day, next_dir_number)
+    with open( generation_population_file_name, 'w' ) as fil:
+        for ind in pop:
+            fil.write( 'ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+            fil.write( '{}\n\n'.format( ind[0].get_attributes ) )
 
     ### Iterate over the generations.
     for g in range( 1, number_of_generations ):
         ### Select the parents.
         selected_parents = toolbox.select( pop, selection_size )
+
+        for parent in selected_parents:
+            parent.type = 'PARENT'
 
         print('\nGeneration {} ... \n'.format(g))
 
@@ -788,7 +804,6 @@ def main():
 
         ### Mate the parents to form new individuals (children).
         for i in range( 0, selection_size, 2 ):
-            #print(i)
             print('parent1: {}\nparent2: {}\n'.format( selected_parents[i], selected_parents[i+1] ) )
 
             child1, child2 = crossover( selected_parents[i], selected_parents[i+1], crossover_probability )
@@ -804,22 +819,36 @@ def main():
             mutated_ind = toolbox.mutate( individual, original_x_dimension, original_y_dimension )
             new_children[m] = mutated_ind
 
+        ### Check the kernel validity of the individuals in the new (mutated) children.
+        new_children = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in new_children ]
+
+        for child in new_children:
+            child.type = 'CHILD'
+
         ### Add migrants to the new population.
         print('\nAdding randomly generated migrants to the new population ...')
         migrants = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for m in range( migrant_size ) ]
 
+        ### Check the kernel validity of the individuals in the new migrants.
+        migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in migrants ]
+
+        for migrant in migrants:
+            migrant.type = 'MIGRANT'
+
         new_population = new_children + migrants
 
         ### Check the kernel validity of the individuals in the new population.
-        new_population = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in new_population ]
 
-        index = range( selection_size, population_size )
+        for new_ind in new_population:
+            new_ind.ID = ID
+            ID += 1
+
         generation = [ g for x in range( len( new_population ) ) ]
 
         ### Run the neural networks of the new individuals to compute their fitness.
         pool = ThreadPool( len(new_population) )
 
-        new_fitnesses = pool.starmap( evaluate, zip(new_population, index, generation) )
+        new_fitnesses = pool.starmap( evaluate, zip(new_population, generation) )
 
         pool.close()
         pool.join()
@@ -828,18 +857,40 @@ def main():
         for ind, fitness in zip( new_population, new_fitnesses ):
             ind.fitness.values = fitness
 
-        ### Set pop to be the new population.
-        pop = selected_parents + new_population
-
-        print('\nFinal new population in Generation {}...'.format(g) )
-        for c, i in enumerate(pop):
-            print('Individual {}:'.format(c) )
-            print(i)
-
         ### Create directory to save the data for the g-th generation.
         generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
         if not os.path.isdir(generation_dir_name):
             os.makedirs(generation_dir_name)
+
+        generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.txt'.format(year, month, day, next_dir_number, g)
+
+        ### Set pop to be the new population.
+        pop = selected_parents + new_population
+
+        with open(generation_population_file_name, 'w') as fil:
+            for ind in pop:
+                if ind.type == 'PARENT':
+                    fil.write( '_PARENT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+
+                elif ind.type == 'CHILD':
+                    fil.write( '_CHILD_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+
+                elif ind.type == 'MIGRANT':
+                    fil.write( '_MIGRANT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+
+                fil.write( '{}\n\n'.format( ind[0].get_attributes ) )
+
+        print('\nFinal new population in Generation {}...'.format(g) )
+        for c, ind in enumerate(pop):
+            print('Individual {} _{}_:'.format(ind.ID, ind.type) )
+            print(ind)
+
+        '''
+        ### Create directory to save the data for the g-th generation.
+        generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
+        if not os.path.isdir(generation_dir_name):
+            os.makedirs(generation_dir_name)
+
 
         ### Save the population of the g-th generation.
         generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.pkl'.format(year, month, day, next_dir_number, g)
@@ -850,7 +901,7 @@ def main():
         generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_fitness.pkl'.format(year, month, day, next_dir_number, g)
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
-
+        '''
         print(fitnesses)
 
     ### Return the final population and final fitnesses.
