@@ -14,8 +14,10 @@ from genes.layer_type import layers_with_kernel
 from genes.layer_type import layers_with_padding
 from genes.layer_type import layers_with_activation
 from genes.layer_type import layers_with_dimensionality
+from genes.layer_type import layers_with_dimensionality_input
 from genes.layer_type import layers_with_pooling
 from genes.layer_type import layers_needing_strides
+
 
 from genes.activation_type import activation_type
 from genes.use_bias import use_bias

@@ -5,9 +5,12 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, SeparableConv2D, DepthwiseConv2D, Dropout
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
+from keras.layers import Embedding, Bidirectional, GlobalAveragePooling1D
+from transformer import TokenAndPositionEmbedding, TransformerBlock
 from keras import regularizers
 from keras import metrics
 from keras import callbacks
+from keras.datasets import reuters
 from apscheduler.schedulers.background import BackgroundScheduler
 import pickle
 import psutil
@@ -37,6 +40,10 @@ data_augmentation = True
 ### Load x training data.
 with open( '/exports/home/j_liu21/projects/genetic_algorithms/x_train.pkl', 'rb' ) as x_train_pkl_file:
     x_train = pickle.load( x_train_pkl_file, encoding='latin1' )
+
+# vocab_size = 20000  # Only consider the top 20k words
+# maxlen = 200  # Only consider the first 200 words of each movie review
+# (x_train, y_train), (x_test, y_test) = reuters.load_data(num_words=vocab_size)
 
 ############################################################
 x_train_data_len = len(x_train)
