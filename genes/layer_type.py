@@ -13,7 +13,12 @@ layer_type = {  0: "Dense",
                 7: "Bidirectional",
                 8: "TokenAndPositionEmbedding",
                 9: "TransformerBlock",
-                10: "GlobalAveragePooling1D"
+                10: "GlobalAveragePooling1D",
+                11: "Conv1D",
+                12: "MaxPooling1D",
+                13: "GlobalMaxPooling1D",
+                14: "LSTM",
+                15: "LayerNormalization"
                 }
 
 
@@ -47,3 +52,11 @@ layers_with_activation = [0, 1, 2, 3]
 # TokenAndPositionEmbedding(self, maxlen, vocab_size, embed_dim)
 # TransformerBlock(self, embed_dim, num_heads, ff_dim, rate=0.1)
 # tf.keras.layers.GlobalAveragePooling1D(data_format="channels_last", **kwargs)
+# tf.keras.layers.Conv1D(filters,kernel_size,strides=1,padding="valid",data_format="channels_last",dilation_rate=1,groups=1,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",kernel_regularizer=None,bias_regularizer=None,activity_regularizer=None,kernel_constraint=None,bias_constraint=None,**kwargs)
+# tf.keras.layers.MaxPooling1D(pool_size=2, strides=None, padding="valid", data_format="channels_last", **kwargs)
+# tf.keras.layers.GlobalMaxPooling1D(data_format="channels_last", **kwargs)
+# tf.keras.layers.LSTM(units,activation="tanh",recurrent_activation="sigmoid",use_bias=True,kernel_initializer="glorot_uniform",recurrent_initializer="orthogonal",bias_initializer="zeros",unit_forget_bias=True,kernel_regularizer=None,recurrent_regularizer=None,bias_regularizer=None,activity_regularizer=None,kernel_constraint=None,recurrent_constraint=None,bias_constraint=None,dropout=0.0,recurrent_dropout=0.0,return_sequences=False,return_state=False,go_backwards=False,stateful=False,time_major=False,unroll=False,**kwargs)
+# tf.keras.layers.LayerNormalization(axis=-1,epsilon=0.001,center=True,scale=True,beta_initializer="zeros",gamma_initializer="ones",beta_regularizer=None,gamma_regularizer=None,beta_constraint=None,gamma_constraint=None,trainable=True,name=None,**kwargs)
+
+
+
