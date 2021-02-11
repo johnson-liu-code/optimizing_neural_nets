@@ -61,40 +61,6 @@ def get_phenotype(layer):
         else:
             phenotype += ", LSTM(" + str(layer.layer_type) + ")"
 
-    if layer.layer_type in layers_with_maxlen:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += str(chromosome[19])         #  19: maxlen
-        else:
-            phenotype += ", " + str(chromosome[19])
-
-    if layer.layer_type in layers_with_vocab_size:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += str(chromosome[20])         #  20: vocab_size
-        else:
-            phenotype += ", " + str(chromosome[20])
-
-    if layer.layer_type in layers_with_dimensionality_embed:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += str(chromosome[21])         #  21: Embedding size for each token
-        else:
-            phenotype += ", " + str(chromosome[21])
-
-    if layer.layer_type in layers_with_num_heads:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += str(chromosome[22])         #  22: Number of attention heads
-        else:
-            phenotype += ", " + str(chromosome[22])
-
-    if layer.layer_type in layers_with_dimensionality_ff:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += str(chromosome[23])  # 23: Hidden layer size in feed forward network inside transformer
-        else:
-            phenotype += ", " + str(chromosome[23])
 
     #if layer[1] in layers_with_kernel:
     if layer.layer_type in layers_with_kernel:
