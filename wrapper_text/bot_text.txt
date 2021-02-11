@@ -1,4 +1,4 @@
-model.add(Flatten())
+#model.add(Flatten())
 model.add(Dense(num_classes, activation='softmax') )
 
 # rmsprop doesn't seem to work.
