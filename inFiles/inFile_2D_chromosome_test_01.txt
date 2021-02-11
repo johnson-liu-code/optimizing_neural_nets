@@ -1,10 +1,10 @@
 maximum_number_of_layers = 2
-population_size = 12
-selection_size = 4
-random_size = 0
+population_size = 48
+selection_size = 24
+migration_size = 2
 mutation_probability = .4
 crossover_probability = .5
-number_of_generations = 2
+number_of_generations = 3
 batch_size = 100
 number_of_classes = 10
 epochs = 1

@@ -28,10 +28,9 @@ with open( infile_name, 'r' ) as fil:
 ### Number of layers beyond the first layer. The first layer is a
 ### special layer that cannot be a flatten or dropout layer.
 max_num_layers = int( lines[0].split()[2] )
-
 population_size = int( lines[1].split()[2] )
 selection_size = int( lines[2].split()[2] )
-random_size = int( lines[3].split()[2] )
+migration_size = int( lines[3].split()[2] )
 mutation_probability = float( lines[4].split()[2] )
 crossover_probability = float( lines[5].split()[2] )
 number_of_generations = int( lines[6].split()[2] )
@@ -706,8 +705,8 @@ def main():
     print('crossover_size (number of children generated, same as the number of parents): {}'.format( crossover_size ) )
 
     ### Number of immigrants. Computed from the population size minus the amount of parents plus the amount of children.
-    migrant_size = population_size - 2 * selection_size
-    print('migrant_size: {}'.format( migrant_size ) )
+    #migration_size = population_size - 2 * selection_size
+    print('migration_size: {}'.format( migration_size ) )
 
     ### mutation probability. Specified in inFile.txt.
     print('mutation_probability (for each gene): {}'.format( mutation_probability ) )
@@ -743,16 +742,16 @@ def main():
     pop = []
     for ind in temp_pop:
         x = creator.Individual(ind)
-        print('x: {}'.format(x))
+        #print('x: {}'.format(x))
         x.ID = ID                         ### Assign ID number to individual.
         ID += 1                           ### Increment the ID number.
-        print('x.ID: {}'.format(x.ID))
+        #print('x.ID: {}'.format(x.ID))
         pop.append(x)
 
-    print('\n\nInitial population ...')
-    for c, i in enumerate(pop):
-        print('Individual {}: '.format(c) )
-        print(i)
+    #print('\n\nInitial population ...')
+    #for c, i in enumerate(pop):
+        #print('Individual {}: '.format(c) )
+        #print(i)
 
     index = np.arange( population_size )
     generation = [ 0 for x in range( population_size ) ]
@@ -767,6 +766,9 @@ def main():
     ### Save fitness values to individuals.
     for ind, fitness in zip( pop, fitnesses ):
         ind.fitness.values = fitness
+
+    #for i, ind in enumerate( pop ):
+    #    ind.fitness.values = [i, 0]
 
     ### Create directory to save the data for the 0th generation.
     generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
@@ -796,6 +798,7 @@ def main():
         selected_parents = toolbox.select( pop, selection_size )
 
         for parent in selected_parents:
+            #print(parent.fitness.values)
             parent.type = 'PARENT'
 
         print('\nGeneration {} ... \n'.format(g))
@@ -803,12 +806,12 @@ def main():
         new_children = []
 
         ### Mate the parents to form new individuals (children).
-        for i in range( 0, selection_size, 2 ):
-            print('parent1: {}\nparent2: {}\n'.format( selected_parents[i], selected_parents[i+1] ) )
+        for i in range( 0, selection_size - migration_size, 2 ):
+            #print('parent1: {}\nparent2: {}\n'.format( selected_parents[i], selected_parents[i+1] ) )
 
             child1, child2 = crossover( selected_parents[i], selected_parents[i+1], crossover_probability )
 
-            print('child1: {}\nchild2: {}\n'.format(child1, child2 ) )
+            #print('child1: {}\nchild2: {}\n'.format(child1, child2 ) )
 
             new_children.append(child1)
             new_children.append(child2)
@@ -827,15 +830,38 @@ def main():
 
         ### Add migrants to the new population.
         print('\nAdding randomly generated migrants to the new population ...')
-        migrants = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for m in range( migrant_size ) ]
+        migrants = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for m in range( migration_size ) ]
 
-        ### Check the kernel validity of the individuals in the new migrants.
+        mated_migrants = []
+
+        #print('These parents suck and will be purged from the population after mating with immigrants.')
+        #print('These parents will be used to mate with migrants and then be removed from the population.')
+        for i in range( 0, migration_size, 2 ):
+            #print('parent 1: {}\nparent 2: {}\n'.format( selected_parents[-i], selected_parents[-(i+1)] ))
+
+            mated_migrant1, mated_migrant2 = crossover( selected_parents[-i], selected_parents[-(i+1)], crossover_probability )
+
+            mated_migrants.append(mated_migrant1)
+            mated_migrants.append(mated_migrant2)
+
+        mated_migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in mated_migrants ]
+
+        for migrant in mated_migrants:
+            migrant.type = 'MATED MIGRANT'
+
         migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in migrants ]
 
         for migrant in migrants:
             migrant.type = 'MIGRANT'
 
-        new_population = new_children + migrants
+        ### Check the kernel validity of the individuals in the new migrants.
+        #migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in migrants ]
+
+        #for migrant in migrants:
+        #    migrant.type = 'MIGRANT'
+
+        #new_population = new_children + migrants
+        new_population = new_children + mated_migrants + migrants
 
         ### Check the kernel validity of the individuals in the new population.
 
@@ -865,7 +891,7 @@ def main():
         generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.txt'.format(year, month, day, next_dir_number, g)
 
         ### Set pop to be the new population.
-        pop = selected_parents + new_population
+        pop = selected_parents[:-migration_size] + new_population
 
         with open(generation_population_file_name, 'w') as fil:
             for ind in pop:
@@ -880,10 +906,10 @@ def main():
 
                 fil.write( '{}\n\n'.format( ind[0].get_attributes ) )
 
-        print('\nFinal new population in Generation {}...'.format(g) )
-        for c, ind in enumerate(pop):
-            print('Individual {} _{}_:'.format(ind.ID, ind.type) )
-            print(ind)
+        #print('\nFinal new population in Generation {}...'.format(g) )
+        #for c, ind in enumerate(pop):
+        #    print('Individual {} _{}_:'.format(ind.ID, ind.type) )
+        #    print(ind)
 
         '''
         ### Create directory to save the data for the g-th generation.
@@ -902,6 +928,7 @@ def main():
         with open(generation_fitness_file_name, 'wb') as fil:
             pickle.dump(fitnesses, fil)
         '''
+        print('Fitnesses:\n')
         print(fitnesses)
 
     ### Return the final population and final fitnesses.
