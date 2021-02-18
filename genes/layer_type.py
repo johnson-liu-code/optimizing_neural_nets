@@ -1,8 +1,6 @@
 # Type of layer.
 # https://keras.io/layers/about-keras-layers/
 
-# DepthwiseConv2D doesn't work for some reason
-
 layer_type = {  0: "Dense",
                 1: "Conv2D",
                 2: "SeparableConv2D",
@@ -17,10 +15,10 @@ layers_with_dimensionality = [0, 1, 2]
 layers_with_pooling = [4, 5]
 layers_needing_strides = [1, 2, 3, 4, 5]
 layers_with_kernel_regularizer = [0, 1]
-layers_with_kernel_constraint = [0, 1]
-layers_with_bias_constraint = [0, 1, 2, 3]
+#layers_with_kernel_constraint = [0, 1]
+#layers_with_bias_constraint = [0, 1, 2, 3]
 layers_with_dilation_rate = [1, 2, 3]
-layers_with_groups = [1]
+#layers_with_groups = [1]
 layers_with_depth_multiplier = [2, 3]
 layers_with_depthwise_initializer = [2, 3]
 #layers_with_pointwise_initializer = [2]

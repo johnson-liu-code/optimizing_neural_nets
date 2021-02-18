@@ -1,5 +1,5 @@
-#model.add(Flatten())
-model.add(Dense(num_classes, activation='softmax') )
+model.add(Flatten())
+model.add(Dense(number_of_classes, activation='softmax') )
 
 # rmsprop doesn't seem to work.
 # AttributeError: module 'keras.optimizers' has no attribute 'rmsprop'
@@ -8,7 +8,7 @@ opt = keras.optimizers.SGD(lr = 0.01, decay = 1e-6)
 
 es = keras.callbacks.EarlyStopping(monitor = 'val_loss', verbose = 1)
 
-scheduler.start()
+#scheduler.start()
 
 model.compile(loss = 'categorical_crossentropy',
               optimizer = opt,
@@ -89,8 +89,9 @@ test_eval_time = t5-t4
 print('test_eval_time: ', test_eval_time)
 
 
-scheduler.shutdown()
-cpu_time = process.cpu_times().user
+#scheduler.shutdown()
+#cpu_time = process.cpu_times().user
 
-print('Training_loss: {} Test_accuracy: {} Mem: {} CPU_time: {}'.format(scores_train_train[0], scores_test[1], mmem, cpu_time) )
+#print('Training_loss: {} Test_accuracy: {} Mem: {} CPU_time: {}'.format(scores_train_train[0], scores_test[1], mmem, cpu_time) )
 
+print('Training_loss: {} Test_accuracy: {} '.format(scores_train_train[0], scores_test[1]) )
