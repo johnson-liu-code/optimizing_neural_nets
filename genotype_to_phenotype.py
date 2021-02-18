@@ -11,15 +11,14 @@ from genes.layer_type import layers_with_dimensionality
 from genes.layer_type import layers_with_dimensionality_input
 from genes.layer_type import layers_with_pooling
 from genes.layer_type import layers_needing_strides
-from genes.layer_type import layers_needing_strides
 from genes.layer_type import layers_with_kernel_regularizer
-from genes.layer_type import layers_with_kernel_constraint
-from genes.layer_type import layers_with_bias_constraint
-from genes.layer_type import layers_with_dilation_rate
-from genes.layer_type import layers_with_groups
-from genes.layer_type import layers_with_depth_multiplier
-from genes.layer_type import layers_with_depthwise_initializer
-from genes.layer_type import layers_with_depthwise_constraint
+#from genes.layer_type import layers_with_kernel_constraint
+#from genes.layer_type import layers_with_bias_constraint
+#from genes.layer_type import layers_with_dilation_rate
+#from genes.layer_type import layers_with_groups
+#from genes.layer_type import layers_with_depth_multiplier
+#from genes.layer_type import layers_with_depthwise_initializer
+#from genes.layer_type import layers_with_depthwise_constraint
 
 
 from genes.activation_type import activation_type
@@ -28,39 +27,31 @@ from genes.bias_initializer_type import bias_initializer_type
 from genes.regularizer_type import regularizer_type
 from genes.kernel_initializer_type import kernel_initializer_type
 
+
 ### Turn layer (a vector of and integers and floats) into strings
 ###     that are fed into the file that runs the neural network.
 
-def get_phenotype(layer):
+def get_phenotype(layer, first_expressed_layer_added):
     first_layer_added = False
     first_layer_input_shape = False
 
     phenotype = "model.add("
-    phenotype += layer_type[ layer.layer_type ] + "("
-
-    ### This part is not needed.
-    if layer.layer_type[1] in layers_with_dimensionality_input:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += "input_dim=" + str(layer.layer_type)
-        else:
-            phenotype += ", input_dim=" + str(layer.layer_type)
+    #phenotype += layer_type[layer[1]] + "("      # layer type
+    phenotype += layer_type[ layer.layer_type ]
 
     #if layer[1] in layers_with_dimensionality:
     if layer.layer_type in layers_with_dimensionality:
         if first_layer_added == False:
             first_layer_added = True
-            phenotype += "filters = " + str( layer.output_dimensionality )
+            if layer.layer_type == 0:
+                phenotype += "units = " + str( layer.output_dimensionality )
+            else:
+                phenotype += "filters = " + str( layer.output_dimensionality )
         else:
-            phenotype += ", filters = " + str( layer.output_dimensionality )
-
-    if layer.layer_type in layers_with_layer:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += "LSTM(" + str(layer.layer_type) + ")"              #  18: layer
-        else:
-            phenotype += ", LSTM(" + str(layer.layer_type) + ")"
-
+            if layer.layer_type == 0:
+                phenotype += ", units = " + str( layer.output_dimensionality )
+            else:
+                phenotype += ", filters = " + str( layer.output_dimensionality )
 
     #if layer[1] in layers_with_kernel:
     if layer.layer_type in layers_with_kernel:
@@ -83,9 +74,12 @@ def get_phenotype(layer):
         else:
             strides_y = layer.strides_y
 
+        if layer.layer_type == 3:
+            strides_y = strides_x
+
         if first_layer_added == False:
             first_layer_added = True
-            phenotype += "strdies = (" + str(strides_x) + ", " + str(strides_y) + ")"
+            phenotype += "strides = (" + str(strides_x) + ", " + str(strides_y) + ")"
         else:
             phenotype += ", strides = (" + str(strides_x) + ", " + str(strides_y) + ")"
 
@@ -94,9 +88,13 @@ def get_phenotype(layer):
         phenotype += ", activation = " + activation_type[ layer.act ]
         phenotype += ", use_bias = " + use_bias[ layer.use_bias ]
         phenotype += ", bias_initializer = " + bias_initializer_type[ layer.bias_init ]
-        phenotype += ", " + regularizer_type( 0, layer.bias_reg )
-        phenotype += ", " + regularizer_type( 1, layer.act_reg )
+        phenotype += ", " + regularizer_type( 0, layer.bias_reg, layer.bias_reg_l1l2_type )
+        phenotype += ", " + regularizer_type( 1, layer.act_reg, layer.act_reg_l1l2_type )
         phenotype += ", kernel_initializer = " + kernel_initializer_type[ layer.kernel_init ]
+
+    if layer.layer_type in layers_with_kernel_regularizer:
+        phenotype += ", " + regularizer_type( 2, layer.kernel_reg, layer.kernel_reg_l1l2_type )
+
 
     #if layer.layer_type in layers_with_kernel_regularizer:
     #    phenotype += ", " + regularizer_type( 2, layer.kernel_reg )
@@ -115,11 +113,18 @@ def get_phenotype(layer):
         elif layer.padding == 1:
             phenotype += ", padding='valid'"
 
-    if first_layer_input_shape == False:
+    # This doesn't work. This layer does not know about the layers that came before it.
+    #if first_layer_input_shape == False:
+    #    phenotype = phenotype + ', input_shape=x_train.shape[1:]))'
+    #    first_layer_input_shape = True
+    #else:
+    #    phenotype = phenotype + "))"
+
+    if first_expressed_layer_added == False:
         phenotype = phenotype + ', input_shape=x_train.shape[1:]))'
-        first_layer_input_shape = True
     else:
         phenotype = phenotype + "))"
+
 
     return phenotype
 

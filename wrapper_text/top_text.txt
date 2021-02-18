@@ -6,7 +6,6 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, SeparableConv2D, DepthwiseConv2D, Dropout
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras.layers import Embedding, Bidirectional, GlobalAveragePooling1D
-from transformer import TokenAndPositionEmbedding, TransformerBlock
 from keras import regularizers
 from keras import metrics
 from keras import callbacks
