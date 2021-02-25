@@ -22,7 +22,7 @@ from genes.layer_type import layers_with_kernel
 from genes.layer_type import layers_with_pooling
 
 
-np.random.seed(0)
+np.random.seed(7)
 
 
 infile_name = sys.argv[1]
@@ -184,13 +184,31 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
             first_expressed_layer_added = True
 
             if layer.layer_type in layers_with_kernel or layer.layer_type in layers_with_pooling:
-                previous_x_dimension, previous_y_dimension = compute_new_dimensions( layer.kernel_x_ratio, layer.kernel_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
-            
+                if layer.layer_type in layers_with_kernel:
+                    kernel_or_pool_x_ratio = layer.kernel_x_ratio
+                    kernel_or_pool_y_ratio = layer.kernel_y_ratio
+
+                elif layer.layer_type in layers_with_pooling:
+                    kernel_or_pool_x_ratio = layer.pool_x_ratio
+                    kernel_or_pool_y_ratio = layer.pool_y_ratio
+
+                if layer.layer_type == 2 or layer.layer_type == 3:
+                    output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_x_ratio, previous_x_dimension, previous_y_dimension )
+                else:
+                    output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
+
+                previous_x_dimension = output_x_dimension
+                previous_y_dimension = output_y_dimension
+
 
         ### If layer.expression == 0, this layer is an empty layer.
         elif layer.expression == 0:
             #zero_layers += 1
             phenotype = '##### ----- EMPTY LAYER ----- ##### ... ' + get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
+
+
+        print("ID: {}, expression: {}, padding_type: {}, kx: {}, ky: {}, sx: {}, sy: {}, px: {}, py: {}, out_x: {}, out_y: {}\n".format(ID, layer.expression, layer.padding, layer.kernel_x_ratio, layer.kernel_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, layer.pool_x_ratio, layer.pool_y_ratio, previous_x_dimension, previous_y_dimension) )
+
 
         ''' 
         Leaving out expression = 2 and 3 for now ... Only have a layer expressed or not expressed.
@@ -204,6 +222,8 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
         '''
 
         phenotype_list.append( phenotype )        ### List of layers in text format.
+
+    print('\n')
 
     ### Check to make sure there are non-empty layers.
     #if zero_layers != num_layers:
@@ -345,14 +365,14 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
             #ratio = layer.kernel_x_ratio
             new_ratio = np.random.normal( layer.kernel_x_ratio, .1 )
             ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
-            if ratio < 0:
-                ratio = 0
-            elif ratio > 1:
-                ratio = 1
+            if new_ratio < 0:
+                new_ratio = 0
+            elif new_ratio > 1:
+                new_ratio = 1
             #new_kernel_x_length = int( new_ratio * x_dimension_length )
 
             #layer.kernel_x = new_kernel_x_length
-            layer.kernel_x_ratio = ratio
+            layer.kernel_x_ratio = new_ratio
 
         ### // Out-dated: Mutate kernel y length.
         ### Mutate the kernel y length ratio.
@@ -370,7 +390,7 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
             #new_kernel_y_length = int( new_ratio * y_dimension_length )
 
             #layer.kernel_y = new_kernel_y_length
-            layer.kernel_y_ratio = ratio
+            layer.kernel_y_ratio = new_ratio
 
         ### // Out-dated: Mutate stride length.
         ### Mutate the stride length in the x dimension.
@@ -642,15 +662,23 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
 ################################ !!! OUT-DATED !!! ################################
 '''
 
-def compute_new_dimensions( kernel_x_ratio, kernel_y_ratio, stride_x_ratio, stride_y_ratio, x_dimension, y_dimension ):
-    kernel_x = kernel_x_ratio * x_dimension
-    kernel_y = kernel_y_ratio * y_dimension
+def compute_new_dimensions( padding_type, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, stride_x_ratio, stride_y_ratio, x_dimension, y_dimension ):
+    kernel_or_pool_x = max( 1, math.floor( kernel_or_pool_x_ratio * x_dimension ) )
+    kernel_or_pool_y = max( 1, math.floor( kernel_or_pool_y_ratio * y_dimension ) )
 
-    stride_x = stride_x_ratio * x_dimension
-    stride_y = stride_y_ratio * y_dimension
+    stride_x = max( 1, math.floor( stride_x_ratio * x_dimension ) )
+    stride_y = max( 1, math.floor( stride_y_ratio * y_dimension ) )
 
-    output_x = math.floor( ( x_dimension - kernel_x + stride_x ) / stride_x )
-    output_y = math.floor( ( y_dimension - kernel_y + stride_y ) / stride_y )
+    if padding_type == 0:    # If padding='same' ...
+        p_x = math.ceil( x_dimension / stride_x - 1 )*stride_x + kernel_or_pool_x - x_dimension
+        p_y = math.ceil( y_dimension / stride_y - 1 )*stride_y + kernel_or_pool_y - y_dimension
+
+    elif padding_type == 1:  # If padding='valid' ...
+        p_x = 0
+        p_y = 0
+
+    output_x = math.floor( ( x_dimension - kernel_or_pool_x + stride_x + p_x ) / stride_x )
+    output_y = math.floor( ( y_dimension - kernel_or_pool_y + stride_y + p_y ) / stride_y )
 
     return output_x, output_y
 
@@ -714,6 +742,7 @@ def test_compute_layer_dimensions():
 def expression():                        ### Return 0 (skip layer), 1 (use layer), 2 (dropout layer), 3 (flatten layer).
     #return np.random.randint(0, 4)
     return np.random.randint( 0, 2 )
+    #return 1
 
 def layer_type():                       ### Return random integer between 0 and 5 for layer type.
     return np.random.randint( 6 )
@@ -733,16 +762,18 @@ def output_dimensionality():            ### Return random integer between 2 and 
 ###########################################
 
 def kernel_x_ratio():
-    return np.random.uniform()
+    return np.random.uniform( 0, 0.5 )
 
 def kernel_y_ratio():
-    return np.random.uniform()
+    return np.random.uniform( 0, 0.5 )
 
 def stride_x_ratio():
-    return np.random.randint( 1, 11 )
+    #return np.random.randint( 1, 11 )
+    return np.random.uniform( 0, 0.1 )
 
 def stride_y_ratio():
-    return np.random.randint( 1, 11 )
+    #return np.random.randint( 1, 11 )
+    return np.random.uniform( 0, 0.1 )
 
 def act():                              ### Return random integer between 0 and 10 for layer activation type.
     return np.random.randint( 11 )
@@ -778,10 +809,12 @@ def dropout_rate():                     ### Return random float between 0 and 1 
     return np.random.uniform()
 
 def pool_x_ratio():
-    return np.random.randint( 1, 11 )
+    #return np.random.randint( 1, 11 )
+    return np.random.uniform( 0, 0.5 )
 
 def pool_y_ratio():
-    return np.random.randint( 1, 11 )
+    #return np.random.randint( 1, 11 )
+    return np.random.uniform( 0, 0.5 )
 
 def padding():
     return np.random.randint( 0, 2 )
@@ -795,8 +828,8 @@ def generate_individual( num_layers, x_dimension_length, y_dimension_length ):
                              output_dimensionality(),
                              kernel_x_ratio(),
                              kernel_y_ratio(),
-                             stride_x(),
-                             stride_y(),
+                             stride_x_ratio(),
+                             stride_y_ratio(),
                              act(),
                              use_bias(),
                              bias_init(),
@@ -1004,7 +1037,6 @@ def main():
 
     #compute_layer_dimensions()
 
-    ''' 
     print('\n... Running genetic algorithm on neural networks ...\n')
 
     print('max_number_of_layers: {}'.format( max_num_layers ) )
@@ -1056,8 +1088,9 @@ def main():
 
     pop = []
     for ind in temp_pop:
-        x = creator.Individual( check_kernel_validity( ind, original_x_dimension, original_y_dimension ) )
-        
+        #x = creator.Individual( check_kernel_validity( ind, original_x_dimension, original_y_dimension ) )
+        x = creator.Individual( ind )
+
         #print('x: {}'.format(x))
         x.ID = ID                         ### Assign ID number to individual.
         ID += 1                           ### Increment the ID number.
@@ -1074,9 +1107,12 @@ def main():
     index = np.arange( population_size )
     generation = [ 0 for x in range( population_size ) ]
 
+    original_x_dimension_list = [ original_x_dimension for x in range( population_size ) ]
+    original_y_dimension_list = [ original_y_dimension for x in range( population_size ) ]
+
     pool = ThreadPool( population_size )
 
-    fitnesses = pool.starmap( evaluate, zip( pop, generation ) )
+    fitnesses = pool.starmap( evaluate, zip( pop, generation, original_x_dimension_list, original_y_dimension_list ) )
 
     pool.close()
     pool.join()
@@ -1099,7 +1135,7 @@ def main():
     generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
     if not os.path.isdir(generation_dir_name):
         os.makedirs(generation_dir_name)
-    '''
+
     ''' 
     ### Save the population of the 0th generation.
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.pkl'.format(year, month, day, next_dir_number)
@@ -1110,12 +1146,15 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
     '''
-    ''' 
+
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format(year, month, day, next_dir_number)
     with open( generation_population_file_name, 'w' ) as fil:
         for ind in pop:
             fil.write( 'ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
             fil.write( '{}\n\n'.format( ind[0].get_attributes ) )
+
+    original_x_dimension_list = [ original_x_dimension for x in range( selection_size - migration_size + 2*migration_size ) ]
+    original_y_dimension_list = [ original_y_dimension for y in range( selection_size - migration_size + 2*migration_size ) ]
 
     ### Iterate over the generations.
     for g in range( 1, number_of_generations ):
@@ -1148,7 +1187,8 @@ def main():
             new_children[m] = mutated_ind
 
         ### Check the kernel validity of the individuals in the new (mutated) children.
-        new_children = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in new_children ]
+        #new_children = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in new_children ]
+        new_children = [ creator.Individual( ind ) for ind in new_children ]
 
         for child in new_children:
             child.type = 'CHILD'
@@ -1169,12 +1209,14 @@ def main():
             mated_migrants.append(mated_migrant1)
             mated_migrants.append(mated_migrant2)
 
-        mated_migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in mated_migrants ]
+        #mated_migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in mated_migrants ]
+        mated_migrants = [ creator.Individual( ind ) for ind in mated_migrants ]
 
         for migrant in mated_migrants:
             migrant.type = 'MATED MIGRANT'
 
-        migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in migrants ]
+        #migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in migrants ]
+        migrants = [ creator.Individual( ind ) for ind in migrants ]
 
         for migrant in migrants:
             migrant.type = 'MIGRANT'
@@ -1244,7 +1286,7 @@ def main():
         for ind in pop:
             print('ID: {}, fitness: {}'.format(ind.ID, ind.fitness.values))        
 
-    '''
+
     pop, fitnesses = 0, 0
     ### Return the final population and final fitnesses.
     return pop, fitnesses

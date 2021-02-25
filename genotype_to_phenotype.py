@@ -1,6 +1,7 @@
 
 
 import numpy as np
+import math
 
 
 from genes.layer_type import layer_type
@@ -57,8 +58,8 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         #if first_argument_added == False:
         #    first_argument_added = True
 
-        kernel_x = layer.kernel_x_ratio * x_dimension
-        kernel_y = layer.kernel_y_ratio * y_dimension
+        kernel_x = max( 1, math.floor( layer.kernel_x_ratio * x_dimension ) )
+        kernel_y = max( 1, math.floor( layer.kernel_y_ratio * y_dimension ) )
 
         phenotype_string_list.append( "kernel_size = (" + str( kernel_x ) + ", " + str( kernel_y ) + ")" )
         #else:
@@ -67,24 +68,25 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     #if layer[1] in layers_needing_strides:
     if layer.layer_type in layers_needing_strides:
         # If strides is set to None, False, or -1 in the layer vector, set strides to be equal to pool size.
-        if layer.stride_x == None or layer.stride_x == False or layer.stride_x == -1:
-            pool_x = layer.pool_x_ratio * x_dimension
+        if layer.stride_x_ratio == None or layer.stride_x_ratio == False or layer.stride_x_ratio == -1:
+            pool_x = max( 1, math.floor( layer.pool_x_ratio * x_dimension ) )
             stride_x = pool_x
         else:
-            stride_x = layer.stride_x_ratio * x_dimension
+            stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
 
-        if layer.stride_y == None or layer.stride_y == False or layer.stride_y == -1:
-            pool_y = layer.pool_y_ratio * y_dimension
-            stride_y = pool_y
-        else:
-            stride_y = layer.stride_y_ratio * y_dimension
-
-        if layer.layer_type == 3:
+        if layer.layer_type == 2 or layer.layer_type == 3:
             stride_y = stride_x
+
+        else:
+            if layer.stride_y_ratio == None or layer.stride_y_ratio == False or layer.stride_y_ratio == -1:
+                pool_y = max( 1, math.floor( layer.pool_y_ratio * y_dimension ) )
+                stride_y = pool_y
+            else:
+                stride_y = max( 1, math.floor( layer.stride_y_ratio * y_dimension ) )
 
         #if first_argument_added == False:
         #    first_argument_added = True
-        phenotype_string_list.apend( "strides = (" + str(stride_x) + ", " + str(stride_y) + ")" )
+        phenotype_string_list.append( "strides = (" + str( stride_x ) + ", " + str( stride_y ) + ")" )
         #else:
         #    phenotype += ", strides = (" + str(stride_x) + ", " + str(stride_y) + ")"
 
@@ -95,7 +97,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         phenotype_string_list.append( "bias_initializer = " + bias_initializer_type[ layer.bias_init ] )
         phenotype_string_list.append( regularizer_type( 0, layer.bias_reg, layer.bias_reg_l1l2_type ) )
         phenotype_string_list.append( regularizer_type( 1, layer.act_reg, layer.act_reg_l1l2_type ) )
-        phenotype += ", kernel_initializer = " + kernel_initializer_type[ layer.kernel_init ]
+        phenotype_string_list.append( "kernel_initializer = " + kernel_initializer_type[ layer.kernel_init ] )
 
     if layer.layer_type in layers_with_kernel_regularizer:
         phenotype_string_list.append( regularizer_type( 2, layer.kernel_reg, layer.kernel_reg_l1l2_type ) )
@@ -109,9 +111,9 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
 
     #if layer[1] in layers_with_pooling:
     if layer.layer_type in layers_with_pooling:
-        pool_x = layer.pool_x_ratio * x_dimension
-        pool_y = layer.pool_y_ratio * y_dimension
-        phenotype_string_list.append( "pool_size = (" + str( pool_x ) + ", " + str( layer.pool_y ) + ")" )
+        pool_x = max( 1, math.floor( layer.pool_x_ratio * x_dimension ) )
+        pool_y = max( 1, math.floor( layer.pool_y_ratio * y_dimension ) )
+        phenotype_string_list.append( "pool_size = (" + str( pool_x ) + ", " + str( pool_y ) + ")" )
 
     #if layer[1] in layers_with_padding:
     if layer.layer_type in layers_with_padding:
@@ -127,12 +129,12 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     #else:
     #    phenotype = phenotype + "))"
 
-    if first_expressed_layer_added == False:
-        phenotype_string_list.append( "input_shape=x_train.shape[1:]))" )
-    else:
-        phenotype_string_list.append( "))" )
+    phenotype = phenotype + ", ".join( phenotype_string_list )
 
-    phenotype = phenotype + " ,".join( phenotype_string_list )
+    if first_expressed_layer_added == False:
+        phenotype += ", input_shape=x_train.shape[1:]))"
+    else:
+        phenotype += "))"
 
 
     return phenotype
