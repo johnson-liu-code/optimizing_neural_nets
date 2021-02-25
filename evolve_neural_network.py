@@ -597,6 +597,9 @@ def pool_size_y():
 def padding():
     return np.random.randint( 0, 2 )
 
+def layervalue():
+    return np.random.randint( 10, 40 )
+
 
 def generate_individual( num_layers, x_dimension_length, y_dimension_length ):
     individual = []

@@ -40,6 +40,14 @@ def get_phenotype(layer, first_expressed_layer_added):
     phenotype += layer_type[ layer.layer_type ]
 
     #if layer[1] in layers_with_dimensionality:
+
+    if layer.layer_type in layers_with_layer:
+        if first_layer_added == False:
+            first_layer_added = True
+            phenotype += "LSTM(" + str( layer.layervalue ) + ")"
+        else:
+            phenotype += ", LSTM(" + str( layer.layervalue ) + ")"
+
     if layer.layer_type in layers_with_dimensionality:
         if first_layer_added == False:
             first_layer_added = True
