@@ -18,14 +18,17 @@ layer_type = {  0: "Dense",
                 }
 
 layers_with_dimensionality_input = [6]
-layers_with_layer = [7]
+layers_with_layer = [7, 12]
+layers_with_filters = [9]
+
+
 
 layers_with_padding = [1, 2, 3, 4, 5]
-layers_with_kernel = [1, 2, 3]
+layers_with_kernel = [1, 2, 3, 9]
 layers_with_activation = [0, 1, 2, 3]
 layers_with_dimensionality = [0, 1, 2, 6]
-layers_with_pooling = [4, 5]
-layers_needing_strides = [1, 2, 3, 4, 5]
+layers_with_pooling = [4, 5, 10]
+layers_needing_strides = [1, 2, 3, 4, 5, 10]
 layers_with_kernel_regularizer = [0, 1]
 #layers_with_kernel_constraint = [0, 1]
 #layers_with_bias_constraint = [0, 1, 2, 3]

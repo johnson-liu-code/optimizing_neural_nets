@@ -41,12 +41,22 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
 
     #if layer[1] in layers_with_dimensionality:
 
-    if layer.layer_type in layers_with_layer:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += "LSTM(" + str( layer.layervalue ) + ")"
-        else:
-            phenotype += ", LSTM(" + str( layer.layervalue ) + ")"
+    if layer.layer_type==6:
+        phenotype = "model.add(Embedding(" + str(layer.input_dimensionality) + "," + str(layer.output_dimensionality) +"))"
+    if layer.layer_type==7:
+        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.layervalue ) + ")))"
+    if layer.layer_type==8:
+        phenotype = "model.add(GlobalAveragePooling1D())"
+    if layer.layer_type==9:
+        phenotype = "model.add(Conv1D(" + str( layer.filters) + "," + str( layer.kernel ) + "))"
+    if layer.layer_type==10:
+        phenotype = "model.add(MaxPooling1D(pool_size=" + str( layer.pool) + ", strides=" + str( layer.strides) + r", padding='same'" +"))"
+    if layer.layer_type==11:
+        phenotype = "model.add(GlobalMaxPooling1D())"
+    if layer.layer_type==12:
+        phenotype = "model.add(LSTM(" + str( layer.layervalue ) + "))"
+    if layer.layer_type==13:
+        phenotype = "model.add(LayerNormalization())"
 
     if layer.layer_type in layers_with_dimensionality:
         #if first_argument_added == False:
