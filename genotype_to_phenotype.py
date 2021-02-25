@@ -31,13 +31,13 @@ from genes.kernel_initializer_type import kernel_initializer_type
 ### Turn layer (a vector of and integers and floats) into strings
 ###     that are fed into the file that runs the neural network.
 
-def get_phenotype(layer, first_expressed_layer_added):
-    first_layer_added = False
+def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension ):
+    phenotype_string_list = []
+    #first_argument_added = False
     first_layer_input_shape = False
 
     phenotype = "model.add("
-    #phenotype += layer_type[layer[1]] + "("      # layer type
-    phenotype += layer_type[ layer.layer_type ]
+    phenotype += layer_type[ layer.layer_type ] + "("
 
     #if layer[1] in layers_with_dimensionality:
 
@@ -49,60 +49,66 @@ def get_phenotype(layer, first_expressed_layer_added):
             phenotype += ", LSTM(" + str( layer.layervalue ) + ")"
 
     if layer.layer_type in layers_with_dimensionality:
-        if first_layer_added == False:
-            first_layer_added = True
-            if layer.layer_type == 0:
-                phenotype += "units = " + str( layer.output_dimensionality )
-            else:
-                phenotype += "filters = " + str( layer.output_dimensionality )
+        #if first_argument_added == False:
+        #    first_argument_added = True
+        if layer.layer_type == 0:
+            phenotype_string_list.append( "units = " + str( layer.output_dimensionality ) )
         else:
-            if layer.layer_type == 0:
-                phenotype += ", units = " + str( layer.output_dimensionality )
-            else:
-                phenotype += ", filters = " + str( layer.output_dimensionality )
+            phenotype_string_list.append( "filters = " + str( layer.output_dimensionality ) )
+        #else:
+        #    if layer.layer_type == 0:
+        #        phenotype += ", units = " + str( layer.output_dimensionality )
+        #    else:
+        #        phenotype += ", filters = " + str( layer.output_dimensionality )
 
     #if layer[1] in layers_with_kernel:
     if layer.layer_type in layers_with_kernel:
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += "kernel_size = (" + str( layer.kernel_x ) + ", " + str( layer.kernel_y ) + ")"
-        else:
-            phenotype += ", kernel_size = (" + str( layer.kernel_x ) + ", " + str( layer.kernel_y ) + ")"
+        #if first_argument_added == False:
+        #    first_argument_added = True
+
+        kernel_x = layer.kernel_x_ratio * x_dimension
+        kernel_y = layer.kernel_y_ratio * y_dimension
+
+        phenotype_string_list.append( "kernel_size = (" + str( kernel_x ) + ", " + str( kernel_y ) + ")" )
+        #else:
+        #    phenotype += ", kernel_size = (" + str( layer.kernel_x ) + ", " + str( layer.kernel_y ) + ")"
 
     #if layer[1] in layers_needing_strides:
     if layer.layer_type in layers_needing_strides:
         # If strides is set to None, False, or -1 in the layer vector, set strides to be equal to pool size.
-        if layer.strides_x == None or layer.strides_x == False or layer.strides_x == -1:
-            strides_x = layer.pool_size_x
+        if layer.stride_x == None or layer.stride_x == False or layer.stride_x == -1:
+            pool_x = layer.pool_x_ratio * x_dimension
+            stride_x = pool_x
         else:
-            strides_x = layer.strides_x
+            stride_x = layer.stride_x_ratio * x_dimension
 
-        if layer.strides_y == None or layer.strides_y == False or layer.strides_y == -1:
-            strides_y = layer.pool_size_y
+        if layer.stride_y == None or layer.stride_y == False or layer.stride_y == -1:
+            pool_y = layer.pool_y_ratio * y_dimension
+            stride_y = pool_y
         else:
-            strides_y = layer.strides_y
+            stride_y = layer.stride_y_ratio * y_dimension
 
         if layer.layer_type == 3:
-            strides_y = strides_x
+            stride_y = stride_x
 
-        if first_layer_added == False:
-            first_layer_added = True
-            phenotype += "strides = (" + str(strides_x) + ", " + str(strides_y) + ")"
-        else:
-            phenotype += ", strides = (" + str(strides_x) + ", " + str(strides_y) + ")"
+        #if first_argument_added == False:
+        #    first_argument_added = True
+        phenotype_string_list.apend( "strides = (" + str(stride_x) + ", " + str(stride_y) + ")" )
+        #else:
+        #    phenotype += ", strides = (" + str(stride_x) + ", " + str(stride_y) + ")"
 
     #if layer[1] in layers_with_activation:
     if layer.layer_type in layers_with_activation:
-        phenotype += ", activation = " + activation_type[ layer.act ]
-        phenotype += ", use_bias = " + use_bias[ layer.use_bias ]
-        phenotype += ", bias_initializer = " + bias_initializer_type[ layer.bias_init ]
-        phenotype += ", " + regularizer_type( 0, layer.bias_reg, layer.bias_reg_l1l2_type )
-        phenotype += ", " + regularizer_type( 1, layer.act_reg, layer.act_reg_l1l2_type )
+        phenotype_string_list.append( "activation = " + activation_type[ layer.act ] )
+        phenotype_string_list.append( "use_bias = " + use_bias[ layer.use_bias ] )
+        phenotype_string_list.append( "bias_initializer = " + bias_initializer_type[ layer.bias_init ] )
+        phenotype_string_list.append( regularizer_type( 0, layer.bias_reg, layer.bias_reg_l1l2_type ) )
+        phenotype_string_list.append( regularizer_type( 1, layer.act_reg, layer.act_reg_l1l2_type ) )
         phenotype += ", kernel_initializer = " + kernel_initializer_type[ layer.kernel_init ]
 
     if layer.layer_type in layers_with_kernel_regularizer:
-        phenotype += ", " + regularizer_type( 2, layer.kernel_reg, layer.kernel_reg_l1l2_type )
-
+        phenotype_string_list.append( regularizer_type( 2, layer.kernel_reg, layer.kernel_reg_l1l2_type ) )
+    
 
     #if layer.layer_type in layers_with_kernel_regularizer:
     #    phenotype += ", " + regularizer_type( 2, layer.kernel_reg )
@@ -112,14 +118,16 @@ def get_phenotype(layer, first_expressed_layer_added):
 
     #if layer[1] in layers_with_pooling:
     if layer.layer_type in layers_with_pooling:
-        phenotype += ", pool_size = (" + str( layer.pool_size_x ) + ", " + str( layer.pool_size_y ) + ")"
+        pool_x = layer.pool_x_ratio * x_dimension
+        pool_y = layer.pool_y_ratio * y_dimension
+        phenotype_string_list.append( "pool_size = (" + str( pool_x ) + ", " + str( layer.pool_y ) + ")" )
 
     #if layer[1] in layers_with_padding:
     if layer.layer_type in layers_with_padding:
         if layer.padding == 0:
-            phenotype += ", padding='same'"
+            phenotype_string_list.append( "padding='same'" )
         elif layer.padding == 1:
-            phenotype += ", padding='valid'"
+            phenotype_string_list.append( "padding='valid'" )
 
     # This doesn't work. This layer does not know about the layers that came before it.
     #if first_layer_input_shape == False:
@@ -129,9 +137,11 @@ def get_phenotype(layer, first_expressed_layer_added):
     #    phenotype = phenotype + "))"
 
     if first_expressed_layer_added == False:
-        phenotype = phenotype + ', input_shape=x_train.shape[1:]))'
+        phenotype_string_list.append( "input_shape=x_train.shape[1:]))" )
     else:
-        phenotype = phenotype + "))"
+        phenotype_string_list.append( "))" )
+
+    phenotype = phenotype + " ,".join( phenotype_string_list )
 
 
     return phenotype

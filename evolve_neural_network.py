@@ -14,10 +14,15 @@ import deap
 from deap import base
 from deap import creator
 from deap import tools
-from keras.datasets import reuters
+#from keras.datasets import reuters
 
 from genotype_to_phenotype import get_phenotype
 from functions.divide_chunks import divide_chunks
+from genes.layer_type import layers_with_kernel
+from genes.layer_type import layers_with_pooling
+
+
+np.random.seed(0)
 
 
 infile_name = sys.argv[1]
@@ -107,10 +112,10 @@ class layer_class:
                   expression = 0,
                   layer_type = 0,
                   output_dimensionality = 0,
-                  kernel_x = 0,
-                  kernel_y = 0,
-                  strides_x = 0,
-                  strides_y = 0,
+                  kernel_x_ratio = 0,
+                  kernel_y_ratio = 0,
+                  stride_x_ratio = 0,
+                  stride_y_ratio = 0,
                   act = 0,
                   use_bias = 0,
                   bias_init = 0,
@@ -122,17 +127,17 @@ class layer_class:
                   kernel_reg = 0,
                   kernel_reg_l1l2_type = 0,
                   dropout_rate = 0,
-                  pool_size_x = 0,
-                  pool_size_y = 0,
+                  pool_x_ratio = 0,
+                  pool_y_ratio = 0,
                   padding = 0 ):
 
         self.expression = expression
         self.layer_type = layer_type
         self.output_dimensionality = output_dimensionality
-        self.kernel_x = kernel_x
-        self.kernel_y = kernel_y
-        self.strides_x = strides_x
-        self.strides_y = strides_y
+        self.kernel_x_ratio = kernel_x_ratio
+        self.kernel_y_ratio = kernel_y_ratio
+        self.stride_x_ratio = stride_x_ratio
+        self.stride_y_ratio = stride_y_ratio
         self.act = act
         self.use_bias = use_bias
         self.bias_init = bias_init
@@ -144,8 +149,8 @@ class layer_class:
         self.kernel_reg = kernel_reg
         self.kernel_reg_l1l2_type = kernel_reg_l1l2_type
         self.dropout_rate = dropout_rate
-        self.pool_size_x = pool_size_x
-        self.pool_size_y = pool_size_y
+        self.pool_x_ratio = pool_x_ratio
+        self.pool_y_ratio = pool_y_ratio
         self.padding = padding
 
     def set_attribute( self, attribute, value ):
@@ -160,7 +165,7 @@ class layer_class:
 
 
 ### Get the fitness of an individual.
-def evaluate( individual, g ):
+def evaluate( individual, g, original_x_dimension, original_y_dimension ):
     ID = individual.ID
 
     ### Convert genotype to phenotype.
@@ -169,16 +174,23 @@ def evaluate( individual, g ):
     #zero_layers = 0                      ### Keep track of how many empty layers ('0' layers) there are in the network.
     first_expressed_layer_added = False
 
+    previous_x_dimension = original_x_dimension
+    previous_y_dimension = original_y_dimension
+
     for n, layer in enumerate( individual ):
         ### If layer.expression == 1, this layer is an expressed chromosome.
         if layer.expression == 1:
-            phenotype = get_phenotype( layer, first_expressed_layer_added )
+            phenotype = get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
             first_expressed_layer_added = True
+
+            if layer.layer_type in layers_with_kernel or layer.layer_type in layers_with_pooling:
+                previous_x_dimension, previous_y_dimension = compute_new_dimensions( layer.kernel_x_ratio, layer.kernel_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
+            
 
         ### If layer.expression == 0, this layer is an empty layer.
         elif layer.expression == 0:
             #zero_layers += 1
-            phenotype = '##### ----- EMPTY LAYER ----- ##### ... ' + get_phenotype( layer, first_expressed_layer_added )
+            phenotype = '##### ----- EMPTY LAYER ----- ##### ... ' + get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
 
         ''' 
         Leaving out expression = 2 and 3 for now ... Only have a layer expressed or not expressed.
@@ -296,6 +308,9 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
             else:
                 layer.expression = 0
 
+        else:
+            layer.expression = 1
+
         ''' 
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
@@ -321,65 +336,84 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
             if layer.output_dimensionality < 2:
                 layer.output_dimensionality = 2
 
-        ### Mutate kernel x length.
+        ### // Out-dated: Mutate kernel x length.
+        ### Mutate the kernel x length ratio.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            kernel_x_length = layer.kernel_x
-            ratio = float(kernel_x_length) / x_dimension_length
-            new_ratio = np.random.normal( ratio, .1 )
+            #kernel_x_length = layer.kernel_x
+            #ratio = float(kernel_x_length) / x_dimension_length
+            #ratio = layer.kernel_x_ratio
+            new_ratio = np.random.normal( layer.kernel_x_ratio, .1 )
             ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
             if ratio < 0:
                 ratio = 0
             elif ratio > 1:
                 ratio = 1
-            new_kernel_x_length = int( new_ratio * x_dimension_length )
+            #new_kernel_x_length = int( new_ratio * x_dimension_length )
 
-            layer.kernel_x = new_kernel_x_length
+            #layer.kernel_x = new_kernel_x_length
+            layer.kernel_x_ratio = ratio
 
-        ### Mutate kernel y length.
+        ### // Out-dated: Mutate kernel y length.
+        ### Mutate the kernel y length ratio.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            kernel_y_length = layer.kernel_y
-            ratio = float(kernel_y_length) / y_dimension_length
-            new_ratio = np.random.normal( ratio, .1 )
+            #kernel_y_length = layer.kernel_y
+            #ratio = float(kernel_y_length) / y_dimension_length
+            #ratio = layer.kernel_y_ratio
+            new_ratio = np.random.normal( layer.kernel_y_ratio, .1 )
             ### Make the ratios non-negative. Make the ratios equal to 1 if they are greater than 1.
             if new_ratio < 0:
                 new_ratio = 0
             elif new_ratio > 1:
                 new_ratio = 1
-            new_kernel_y_length = int( new_ratio * y_dimension_length )
+            #new_kernel_y_length = int( new_ratio * y_dimension_length )
 
-            layer.kernel_y = new_kernel_y_length
+            #layer.kernel_y = new_kernel_y_length
+            layer.kernel_y_ratio = ratio
 
+        ### // Out-dated: Mutate stride length.
         ### Mutate the stride length in the x dimension.
         ###     When mutating the stride length, the ratio is taken between the dimension
         ###     length and the stride length. The ratio is mutated and the new ratio is
         ###     used to compute the new strides length.
+
+        ### Mutate the stride x ratio.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            strides_x_length = layer.strides_x
-            ratio = float(strides_x_length) / x_dimension_length
-            new_ratio = np.random.normal( ratio, .1 )
+            #stride_x_length = layer.stride_x
+            #ratio = float(stride_x_length) / x_dimension_length
+            #ratio = layer.stride_x_ratio
+            new_ratio = np.random.normal( layer.stride_x_ratio, .1 )
             if new_ratio > 1:
                 new_ratio = 1
             elif new_ratio < 0:
                 new_ratio = .1
 
-            new_strides_x_length = int( new_ratio * x_dimension_length )
+            #new_stride_x_length = int( new_ratio * x_dimension_length )
 
+            layer.stride_x_ratio = new_ratio
+
+
+        ### // Out-dated: Mutate stride length.
         ### Mutate the stride length in the y dimension.
-        ###     See the comment for strides_x_length.
+        ###     See the comment for stride_x_length.
+
+        ### Mutate the stride y ratio.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            strides_y_length = layer.strides_y
-            ratio = float(strides_y_length) / y_dimension_length
-            new_ratio = np.random.normal( ratio, .1 )
+            #stride_y_length = layer.stride_y
+            #ratio = float(stride_y_length) / y_dimension_length
+            #ratio = layer.stride_y_ratio
+            new_ratio = np.random.normal( layer.stride_y_ratio, .1 )
             if new_ratio > 1:
                 new_ratio = 1
             elif new_ratio < 0:
                 new_ratio = .1
 
-            new_strides_y_length = int( new_ratio * y_dimension_length )
+            #new_stride_y_length = int( new_ratio * y_dimension_length )
+
+            layer.stride_y_ratio = new_ratio
 
         ### Mutate activation type.
         r = np.random.uniform( 0, 1 )
@@ -406,6 +440,12 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
                 new_bias_reg = -1
             layer.bias_reg = new_bias_reg
 
+        ### Mutate bias l1l2 regularizer type.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            new_bias_reg_l1l2_type = np.random.randint( 0, 3 )
+            layer.bias_reg_l1l2_type = new_bias_reg_l1l2_type
+
         ### Mutate activity regularizer.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
@@ -417,10 +457,32 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
                 new_act_reg = -1
             layer.act_reg = new_act_reg
 
+        ### Mutate activity l1l2 regularizer type.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            new_act_reg_l1l2_type = np.random.randint( 0, 3 )
+            layer.act_reg_l1l2_type = new_act_reg_l1l2_type
+
         ### Mutate kernel initializer.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
             layer.kernel_init = np.random.randint( 0, 11 )
+
+        ### Mutate kernel regularizer.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            new_kernel_reg = np.random.normal( layer.kernel_reg, .1 )
+            if new_kernel_reg > 1:
+                new_kernel_reg = 1
+            elif new_kernel_reg < -1:
+                new_kernel_reg = -1
+            layer.kernel_reg = new_kernel_reg
+
+        ### Mutate kernel l1l2 regularizer type.
+        r = np.random.uniform( 0, 1 )
+        if r <= mutation_probability:
+            new_kernel_reg_l1l2_type = np.random.randint( 0, 3 )
+            layer.kernel_reg_l1l2_type = new_kernel_reg_l1l2_type
 
         ### Mutate dropout rate.
         r = np.random.uniform( 0, 1 )
@@ -432,16 +494,35 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
                 new_dropout_rate = 0
             layer.dropout_rate = new_dropout_rate
 
-        ### Mutate pool length in the x dimension.
+        ### // Out-dated: Mutate pool length in the x dimension.
+        ### Mutate pool x ratio.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
             #layer[14] = np.random.randint( 1, 11 )
-            layer.pool_size_x = np.random.randint( 1, 11 )
+            #layer.pool_size_x = np.random.randint( 1, 11 )
+            #ratio = layer.pool_x_ratio
+            new_ratio = np.random.normal( layer.pool_x_ratio, .1 )
+            if new_ratio > 1:
+                new_ratio = 1
+            elif new_ratio < 0:
+                new_ratio = .1
 
-        ### Mutate pool length in the y dimension.
+            #new_stride_y_length = int( new_ratio * y_dimension_length )
+
+            layer.pool_x_ratio = new_ratio
+
+        ### // Out-dated: Mutate pool length in the y dimension.
+        ### Mutate pool y ratio.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer.pool_size_y = np.random.randint( 1, 11 )
+            #layer.pool_size_y = np.random.randint( 1, 11 )
+            new_ratio = np.random.normal( layer.pool_y_ratio, .1 )
+            if new_ratio > 1:
+                new_ratio = 1
+            elif new_ratio < 0:
+                new_ratio = .1
+
+            layer.pool_y_ratio = new_ratio
 
         ### Mutate padding type.
         r = np.random.uniform( 0, 1 )
@@ -455,7 +536,8 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
 
     return mutated_individual
 
-
+''' 
+################################ !!! OUT-DATED !!! ################################
 ### Check if the x and y kernals are valid (they should
 ###     be smaller than the corresponding dimension size.)
 def check_kernel_validity( individual, original_x_dimension, original_y_dimension ):
@@ -471,53 +553,82 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
 
     ### Iterate over the layers.
     for c, layer in enumerate( individual ):
+        padding_type = layer.padding
+        expression = layer.expression
+        print('layer num: {}, expression: {}, padding_type: {}'.format(c, expression, padding_type))
+
         #kernel_x_length = layer[3]
         #kernel_y_length = layer[4]
-        kernel_x_length = layer.kernel_x
-        kernel_y_length = layer.kernel_y
+        #kernel_x_length = layer.kernel_x
+        #kernel_y_length = layer.kernel_y
 
-        ### Check if the kernal size is greater than the dimension size. The kernel size
-        ###     needs to be less than or equal to the dimension size minus 1 (for stride = 1).
-        ###     output = input - (kernel - 1).
-        ###     If the kernal size is too large, generate a random number between 0 and 1 and
-        ###     take the floor of [that number times the dimension size]. This gives a kernal size
-        ###     that is less than the dimension size.
+        kernel_x_length = layer.kernel_x_ratio * previous_x_dimension
+        kernel_y_length = layer.kernel_y_ratio * previous_y_dimension
 
-        #print('layer: {}\nkernel_x_length: {}, previous_x_dimension - 1: {}\nkernel_y_length: {}, previous_y_dimension - 1: {}\n'.format( c, kernel_x_length, previous_x_dimension-1, kernel_y_length, previous_y_dimension-1 ))
+        stride_x_length = layer.stride_x
+        stride_y_length = layer.stride_y
 
-        if kernel_x_length > previous_x_dimension - 1:
-            kernel_x_ratio = np.random.uniform( 0, 1 )
-            kernel_x_length = int( math.floor( kernel_x_ratio * previous_x_dimension ) )
+        if padding_type == 'valid':
+            ########## UPDATE THIS TEXT ##########
+            ### Check if the kernal size is greater than the dimension size. The kernel size
+            ###     needs to be less than or equal to the dimension size minus 1 (for stride = 1).
+            ###     output = input - (kernel - 1).
+            ###     If the kernal size is too large, generate a random number between 0 and 1 and
+            ###     take the floor of [that number times the dimension size]. This gives a kernal size
+            ###     that is less than the dimension size.
+            ######################################
 
-        if kernel_y_length > previous_y_dimension - 1:
-            kernel_y_ratio = np.random.uniform( 0, 1 )
-            kernel_y_length = int( math.floor( kernel_y_ratio * previous_y_dimension ) )
+            #print('layer: {}\nkernel_x_length: {}, previous_x_dimension - 1: {}\nkernel_y_length: {}, previous_y_dimension - 1: {}\n'.format( c, kernel_x_length, previous_x_dimension-1, kernel_y_length, previous_y_dimension-1 ))
 
-        ### Check if the kernel length is less than 1. If so, change the size to be equal to 1.
-        if kernel_x_length < 1:
-            kernel_x_length = 1
-        if kernel_y_length < 1:
-            kernel_y_length = 1
+            if kernel_x_length > previous_x_dimension:
+                kernel_x_ratio = np.random.uniform( 0, 1 )
+                kernel_x_length = int( math.floor( kernel_x_ratio * previous_x_dimension ) )
 
-        ### New dimension size is the old dimension size minus the quantity
-        ###     kernel size minus 1.
+            if kernel_y_length > previous_y_dimension:
+                kernel_y_ratio = np.random.uniform( 0, 1 )
+                kernel_y_length = int( math.floor( kernel_y_ratio * previous_y_dimension ) )
 
-        previous_x_dimension -= (kernel_x_length - 1)
-        previous_y_dimension -= (kernel_y_length - 1)
+            ### Check if the kernel length is less than 1. If so, change the size to be equal to 1.
+            if kernel_x_length < 1:
+                kernel_x_length = 1
+            if kernel_y_length < 1:
+                kernel_y_length = 1
 
-        if previous_x_dimension < 1:
-            previous_x_dimension = 1
-            kernel_x_length = 1
+            ### New dimension size is the old dimension size minus the quantity
+            ###     kernel size minus 1.
 
-        if previous_y_dimension < 1:
-            previous_y_dimension = 1
-            kernel_y_length = 1
+            #previous_x_dimension -= (kernel_x_length - 1)
+            #previous_y_dimension -= (kernel_y_length - 1)
 
-        ### Save the new, valid kernel sizes to the chunk (layer).
-        #layer[3] = int( math.floor( kernel_x_length ) )
-        #layer[4] = int( math.floor( kernel_y_length ) )
-        layer.kernel_x = int( math.floor( kernel_x_length ) )
-        layer.kernel_y = int( math.floor( kernel_y_length ) )
+            new_x_dimension = math.floor( ( previous_x_dimension - kernel_x_length + stride_x_length ) / stride_x_length )
+            new_y_dimension = math.floor( ( previous_y_dimension - kernel_y_length + stride_y_length ) / stride_y_length )
+
+            if new_x_dimension < 1:
+                previous_x_dimension = 1
+                #kernel_x_length = 1
+
+            if new_y_dimension < 1:
+                previous_y_dimension = 1
+                #kernel_y_length = 1
+
+            ### Save the new, valid kernel sizes to the chunk (layer).
+            #layer[3] = int( math.floor( kernel_x_length ) )
+            #layer[4] = int( math.floor( kernel_y_length ) )
+            layer.kernel_x = int( math.floor( kernel_x_length ) )
+            layer.kernel_y = int( math.floor( kernel_y_length ) )
+
+        elif padding == 'same':
+            px = ( math.ceil( previous_x_dimention / stride_x_length ) - 1 )*stride_x_length + kernel_x_length - previous_x_dimension
+            new_x_dimension = math.floor( ( previous_x_dimension - kernel_x_length + px + stride_x_length ) / stride_x_length )
+
+            py = ( math.ceil( previous_y_dimention / stride_y_length ) - 1 )*stride_y_length + kernel_y_length - previous_y_dimension
+            new_y_dimension = math.floor( ( previous_y_dimension - kernel_y_length + py + stride_y_length ) / stride_y_length )
+
+            previous_x_dimension = new_x_dimension
+            previous_y_dimension = new_y_dimension
+
+        print('(new) previous_x_dimension: {}, (new) previous_y_dimension: {}'.format(previous_x_dimension, previous_y_dimension))
+
 
         #print('layer: {}\nnew kernel_x_length: {}, previous_x_dimension - 1: {}\nnew kernel_y_length: {}, previous_y_dimension - 1: {}\n'.format( c, kernel_x_length, previous_x_dimension-1, kernel_y_length, previous_y_dimension-1 ))
 
@@ -528,6 +639,77 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
     modified_individual = creator.Individual( modified_individual )
 
     return modified_individual
+################################ !!! OUT-DATED !!! ################################
+'''
+
+def compute_new_dimensions( kernel_x_ratio, kernel_y_ratio, stride_x_ratio, stride_y_ratio, x_dimension, y_dimension ):
+    kernel_x = kernel_x_ratio * x_dimension
+    kernel_y = kernel_y_ratio * y_dimension
+
+    stride_x = stride_x_ratio * x_dimension
+    stride_y = stride_y_ratio * y_dimension
+
+    output_x = math.floor( ( x_dimension - kernel_x + stride_x ) / stride_x )
+    output_y = math.floor( ( y_dimension - kernel_y + stride_y ) / stride_y )
+
+    return output_x, output_y
+
+
+def compute_layer_dimensions( individual, original_x_dimension, original_y_dimension ):
+    previous_x_dimension = original_x_dimension
+    previous_y_dimension = original_y_dimension
+
+    for c, layer in enumerate( individual ):
+        layer_type = layer.layer_type
+
+        if ( (layer_type in layers_with_kernel) or (layer_type in layers_with_pooling) ):
+            kernel_x_ratio = layer.kernel_x_ratio
+            kernel_y_ratio = layer.kernel_y_ratio
+            stride_x_ratio = layer.stride_x_ratio
+            stride_y_ratio = layer.stride_y_ratio
+        
+            previous_x_dimension, previous_y_dimension = compute_new_dimensions( kernel_x_ratio, kernel_y_ratio, stride_x_ratio, stride_y_ratio, previous_x_dimension, previous_y_dimension )
+
+            #print('c:{}, previous_x_dimension: {}, previous_y_dimension: {}'.format(c, previous_x_dimension, previous_y_dimension))
+
+
+def test_compute_layer_dimensions():
+    original_x_dimension = 32
+    original_y_dimension = 32
+
+    individual = [ layer_class() for c in range(5) ]
+
+    individual[0].layer_type = 1
+    individual[0].padding = 0
+    individual[0].kernel_x_ratio = 2/32
+    individual[0].kernel_y_ratio = 1/32
+    individual[0].stride_x_ratio = 2/32
+    individual[0].stride_y_ratio = 1/32
+    
+    individual[1].layer_type = 1
+    individual[1].padding = 0
+    individual[1].kernel_x_ratio = 1/16
+    individual[1].kernel_y_ratio = 2/32
+    individual[1].stride_x_ratio = 1/16
+    individual[1].stride_y_ratio = 2/32
+
+    individual[2].layer_type = 1
+    individual[2].padding = 0
+    individual[2].kernel_x_ratio = 3/16
+    individual[2].kernel_y_ratio = 4/16
+    individual[2].stride_x_ratio = 4/16
+    individual[2].stride_y_ratio = 3/16
+
+    individual[3].layer_type = 1
+    individual[3].padding = 0
+    individual[3].kernel_x_ratio = 4/4
+    individual[3].kernel_y_ratio = 3/5
+    individual[3].stride_x_ratio = 3/4
+    individual[3].stride_y_ratio = 4/5
+
+    compute_layer_dimensions( individual, original_x_dimension, original_y_dimension )
+
+
 
 def expression():                        ### Return 0 (skip layer), 1 (use layer), 2 (dropout layer), 3 (flatten layer).
     #return np.random.randint(0, 4)
@@ -539,20 +721,27 @@ def layer_type():                       ### Return random integer between 0 and 
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     return np.random.randint( 2, 101 )
 
-def get_kernel_x( x_dimension_length ):
-#def get_kernel_x():                    ### Return kernel size for x dimension (THIS IS NOT RIGHT --> as a fraction of the dimension length).
+################ OUT-DATED ################
+#def kernel_x( x_dimension_length ):
+#def kernel_x():                    ### Return kernel size for x dimension (THIS IS NOT RIGHT --> as a fraction of the dimension length).
                                         ###    The kernel length is an integer in the actual chromosome. When doing mutations, the ratio is
                                         ###    computed using the kernel length and the dimension length of the current layer.
-    return np.random.randint( 1, x_dimension_length + 1 )
+    #return np.random.randint( 1, x_dimension_length + 1 )
+#def kernel_y( y_dimension_length ):
+#def kernel_y():                    ### Return kernel size for y dimension (SEE ABOVE --> as a fraction of the dimension length).
+    #return np.random.randint( 1, y_dimension_length + 1 )
+###########################################
 
-def get_kernel_y( y_dimension_length ):
-#def get_kernel_y():                    ### Return kernel size for y dimension (SEE ABOVE --> as a fraction of the dimension length).
-    return np.random.randint( 1, y_dimension_length + 1 )
+def kernel_x_ratio():
+    return np.random.uniform()
 
-def strides_x():
+def kernel_y_ratio():
+    return np.random.uniform()
+
+def stride_x_ratio():
     return np.random.randint( 1, 11 )
 
-def strides_y():
+def stride_y_ratio():
     return np.random.randint( 1, 11 )
 
 def act():                              ### Return random integer between 0 and 10 for layer activation type.
@@ -588,10 +777,10 @@ def kernel_reg_l1l2_type():
 def dropout_rate():                     ### Return random float between 0 and 1 for the dropout rate.
     return np.random.uniform()
 
-def pool_size_x():
+def pool_x_ratio():
     return np.random.randint( 1, 11 )
 
-def pool_size_y():
+def pool_y_ratio():
     return np.random.randint( 1, 11 )
 
 def padding():
@@ -607,10 +796,10 @@ def generate_individual( num_layers, x_dimension_length, y_dimension_length ):
         layer = layer_class( expression(),
                              layer_type(),
                              output_dimensionality(),
-                             get_kernel_x( x_dimension_length ),
-                             get_kernel_y( y_dimension_length ),
-                             strides_x(),
-                             strides_y(),
+                             kernel_x_ratio(),
+                             kernel_y_ratio(),
+                             stride_x(),
+                             stride_y(),
                              act(),
                              use_bias(),
                              bias_init(),
@@ -622,8 +811,8 @@ def generate_individual( num_layers, x_dimension_length, y_dimension_length ):
                              kernel_reg(),
                              kernel_reg_l1l2_type(),
                              dropout_rate(),
-                             pool_size_x(),
-                             pool_size_y(),
+                             pool_x_ratio(),
+                             pool_y_ratio(),
                              padding() )
 
         individual.append( layer )
@@ -656,28 +845,49 @@ def seed_population( initial_population_directory ):
                     field = convert( field.strip(',') )
                     converted_fields.append( field )
 
-                layer = layer_class( converted_fields[0],
-                                     converted_fields[1],
-                                     converted_fields[2],
-                                     converted_fields[3],
-                                     converted_fields[4],
-                                     converted_fields[5],
-                                     converted_fields[6],
-                                     converted_fields[7],
-                                     converted_fields[8],
-                                     converted_fields[9],
-                                     converted_fields[10],
-                                     converted_fields[11],
-                                     converted_fields[12],
-                                     converted_fields[13],
-                                     converted_fields[14],
-                                     converted_fields[15],
-                                     converted_fields[16],
-                                     converted_fields[17],
-                                     converted_fields[18],
-                                     converted_fields[19],
-                                     converted_fields[20],
-                                     converted_fields[21] )
+                expression = converted_fields[0]
+                layer_type = convereted_fields[1]
+                output_dimensionality = convereted_fields[2]
+                kernel_x_ratio = convereted_fields[3]
+                kernel_y_ratio = convereted_fields[4]
+                stride_x_ratio = convereted_fields[5]
+                stride_y_ratio = convereted_fields[6]
+                act = convereted_fields[7]
+                use_bias = convereted_fields[8]
+                bias_init = convereted_fields[9]
+                bias_reg = convereted_fields[10]
+                bias_reg_l1l2_type = convereted_fields[11]
+                act_reg = convereted_fields[12]
+                act_reg_l1l2_type = convereted_fields[13]
+                kernel_init = convereted_fields[14]
+                kernel_reg = convereted_fields[15]
+                kernel_reg_l1l2_type = convereted_fields[16]
+                dropout_rate = convereted_fields[17]
+                pool_x_ratio = convereted_fields[18]
+                pool_y_ratio = convereted_fields[19]
+                padding = convereted_fields[20]
+
+                layer = layer_class( expression,
+                                     layer_type,
+                                     output_dimensionality,
+                                     kernel_x_ratio,
+                                     kernel_y_ratio,
+                                     stride_x_ratio,
+                                     stride_y_ratio,
+                                     act,
+                                     use_bias,
+                                     bias_init,
+                                     bias_reg,
+                                     bias_reg_l1l2_type,
+                                     act_reg,
+                                     act_reg_l1l2_type,
+                                     kernel_init,
+                                     kernel_reg,
+                                     kernel_reg_l1l2_type,
+                                     dropout_rate,
+                                     pool_x_ratio,
+                                     pool_y_ratio,
+                                     padding )
 
                 chromosome.append( layer )
 
@@ -728,7 +938,8 @@ toolbox = base.Toolbox()
 ### Create a string of a command to be executed to register a 'type' of individual.
 toolbox_ind_str = "toolbox.register('individual', tools.initCycle, creator.Individual, ("
 
-'''
+''' 
+# This is not needed and is out-of-date.
 ### Iterate over the number of layers and append to the string to be executed.
 for n in range( max_num_layers ):
     expression_str = 'expression_' + str(n)
@@ -736,8 +947,8 @@ for n in range( max_num_layers ):
     output_dimensionality_str = 'output_dimensionality_' + str(n)
     kernel_x_str = 'kernel_x_' + str(n)
     kernel_y_str = 'kerner_y_' + str(n)
-    strides_x_str = 'strides_x_' + str(n)
-    strides_y_str = 'strides_y_' + str(n)
+    stride_x_str = 'stride_x_' + str(n)
+    stride_y_str = 'stride_y_' + str(n)
     act_str = 'act_' + str(n)
     use_bias_str = 'use_bias_' + str(n)
     bias_init_str = 'bias_init_' + str(n)
@@ -753,10 +964,10 @@ for n in range( max_num_layers ):
     toolbox.register(layer_str, layer_type)
     toolbox.register(output_dimensionality_str, output_dimensionality)
 
-    toolbox.register( kernel_x_str, get_kernel_x )
-    toolbox.register( kernel_y_str, get_kernel_y )
-    toolbox.register( strides_x_str, strides_x )
-    toolbox.register( strides_y_str, strides_y )
+    toolbox.register( kernel_x_str, kernel_x )
+    toolbox.register( kernel_y_str, kernel_y )
+    toolbox.register( stride_x_str, stride_x )
+    toolbox.register( stride_y_str, stride_y )
     toolbox.register( act_str, act )
     toolbox.register( use_bias_str, use_bias )
     toolbox.register( bias_init_str, bias_init )
@@ -770,8 +981,8 @@ for n in range( max_num_layers ):
 
     toolbox_ind_str += 'toolbox.' + expression_str + ', toolbox.' + layer_str
     toolbox_ind_str += ', toolbox.' + output_dimensionality_str + ', toolbox.' + kernel_x_str
-    toolbox_ind_str += ', toolbox.' + kernel_y_str + ', toolbox.' + strides_x_str
-    toolbox_ind_str += ', toolbox.' + strides_y_str + ', toolbox.' + act_str
+    toolbox_ind_str += ', toolbox.' + kernel_y_str + ', toolbox.' + stride_x_str
+    toolbox_ind_str += ', toolbox.' + stride_y_str + ', toolbox.' + act_str
     toolbox_ind_str += ', toolbox.' + use_bias_str + ', toolbox.' + bias_init_str
     toolbox_ind_str += ', toolbox.' + bias_reg_str + ', toolbox.' + act_reg_str
     toolbox_ind_str += ', toolbox.' + kernel_init_str + ', toolbox.' + dropout_rate_str
@@ -793,6 +1004,10 @@ toolbox.register( 'mutate', mutation )
 toolbox.register( 'select', tools.selNSGA2 )
 
 def main():
+
+    #compute_layer_dimensions()
+
+    ''' 
     print('\n... Running genetic algorithm on neural networks ...\n')
 
     print('max_number_of_layers: {}'.format( max_num_layers ) )
@@ -845,6 +1060,7 @@ def main():
     pop = []
     for ind in temp_pop:
         x = creator.Individual( check_kernel_validity( ind, original_x_dimension, original_y_dimension ) )
+        
         #print('x: {}'.format(x))
         x.ID = ID                         ### Assign ID number to individual.
         ID += 1                           ### Increment the ID number.
@@ -886,8 +1102,8 @@ def main():
     generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
     if not os.path.isdir(generation_dir_name):
         os.makedirs(generation_dir_name)
-
     '''
+    ''' 
     ### Save the population of the 0th generation.
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.pkl'.format(year, month, day, next_dir_number)
     with open(generation_population_file_name, 'wb') as fil:
@@ -897,7 +1113,7 @@ def main():
     with open(generation_fitness_file_name, 'wb') as fil:
         pickle.dump(fitnesses, fil)
     '''
-
+    ''' 
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format(year, month, day, next_dir_number)
     with open( generation_population_file_name, 'w' ) as fil:
         for ind in pop:
@@ -1023,22 +1239,7 @@ def main():
         #    print('Individual {} _{}_:'.format(ind.ID, ind.type) )
         #    print(ind)
 
-        '''
-        ### Create directory to save the data for the g-th generation.
-        generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
-        if not os.path.isdir(generation_dir_name):
-            os.makedirs(generation_dir_name)
 
-        ### Save the population of the g-th generation.
-        generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.pkl'.format(year, month, day, next_dir_number, g)
-        with open(generation_population_file_name, 'wb') as fil:
-            pickle.dump(pop, fil)
-
-        ### Save the fitnesses of the g-th generation.
-        generation_fitness_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_fitness.pkl'.format(year, month, day, next_dir_number, g)
-        with open(generation_fitness_file_name, 'wb') as fil:
-            pickle.dump(fitnesses, fil)
-        '''
         print('Generation {} new fitnesses:\n'.format(g))
         #for fitness in fitnesses:
         #    print(fitness)
@@ -1046,7 +1247,8 @@ def main():
         for ind in pop:
             print('ID: {}, fitness: {}'.format(ind.ID, ind.fitness.values))
 
-
+    '''
+    pop, fitnesses = 0, 0
     ### Return the final population and final fitnesses.
     return pop, fitnesses
 
