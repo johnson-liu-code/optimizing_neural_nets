@@ -207,7 +207,7 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
             phenotype = '##### ----- EMPTY LAYER ----- ##### ... ' + get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
 
 
-        print("ID: {}, expression: {}, padding_type: {}, kx: {}, ky: {}, sx: {}, sy: {}, px: {}, py: {}, out_x: {}, out_y: {}\n".format(ID, layer.expression, layer.padding, layer.kernel_x_ratio, layer.kernel_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, layer.pool_x_ratio, layer.pool_y_ratio, previous_x_dimension, previous_y_dimension) )
+        #print("ID: {}, expression: {}, padding_type: {}, kx: {}, ky: {}, sx: {}, sy: {}, px: {}, py: {}, out_x: {}, out_y: {}\n".format(ID, layer.expression, layer.padding, layer.kernel_x_ratio, layer.kernel_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, layer.pool_x_ratio, layer.pool_y_ratio, previous_x_dimension, previous_y_dimension) )
 
 
         ''' 
@@ -223,7 +223,7 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
         phenotype_list.append( phenotype )        ### List of layers in text format.
 
-    print('\n')
+    #print('\n')
 
     ### Check to make sure there are non-empty layers.
     #if zero_layers != num_layers:
@@ -575,7 +575,7 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
     for c, layer in enumerate( individual ):
         padding_type = layer.padding
         expression = layer.expression
-        print('layer num: {}, expression: {}, padding_type: {}'.format(c, expression, padding_type))
+        #print('layer num: {}, expression: {}, padding_type: {}'.format(c, expression, padding_type))
 
         #kernel_x_length = layer[3]
         #kernel_y_length = layer[4]
@@ -647,7 +647,7 @@ def check_kernel_validity( individual, original_x_dimension, original_y_dimensio
             previous_x_dimension = new_x_dimension
             previous_y_dimension = new_y_dimension
 
-        print('(new) previous_x_dimension: {}, (new) previous_y_dimension: {}'.format(previous_x_dimension, previous_y_dimension))
+        #print('(new) previous_x_dimension: {}, (new) previous_y_dimension: {}'.format(previous_x_dimension, previous_y_dimension))
 
 
         #print('layer: {}\nnew kernel_x_length: {}, previous_x_dimension - 1: {}\nnew kernel_y_length: {}, previous_y_dimension - 1: {}\n'.format( c, kernel_x_length, previous_x_dimension-1, kernel_y_length, previous_y_dimension-1 ))
@@ -1037,32 +1037,32 @@ def main():
 
     #compute_layer_dimensions()
 
-    print('\n... Running genetic algorithm on neural networks ...\n')
+    #print('\n... Running genetic algorithm on neural networks ...\n')
 
-    print('max_number_of_layers: {}'.format( max_num_layers ) )
+    #print('max_number_of_layers: {}'.format( max_num_layers ) )
 
     ### Population size. Specified in inFile.txt.
-    print('population_size: {}'.format( population_size ) )
+    #print('population_size: {}'.format( population_size ) )
 
     ### Number of individuals (parents) to clone for the next generation. Specified in inFile.txt.
-    print('selection_size (number of parents): {}'.format( selection_size ) )
+    #print('selection_size (number of parents): {}'.format( selection_size ) )
 
     ### Number of individuals made through crossing of selected parents. Same as the number of parents.
     crossover_size = selection_size
-    print('crossover_size (number of children generated, same as the number of parents): {}'.format( crossover_size ) )
+    #print('crossover_size (number of children generated, same as the number of parents): {}'.format( crossover_size ) )
 
     ### Number of immigrants. Computed from the population size minus the amount of parents plus the amount of children.
     #migration_size = population_size - 2 * selection_size
-    print('migration_size: {}'.format( migration_size ) )
+    #print('migration_size: {}'.format( migration_size ) )
 
     ### mutation probability. Specified in inFile.txt.
-    print('mutation_probability (for each gene): {}'.format( mutation_probability ) )
+    #print('mutation_probability (for each gene): {}'.format( mutation_probability ) )
 
     ### Crossover probability (for uniform crossover). Specified in inFile.txt.
-    print('crossover_probability (for each gene, for uniform crossover): {}'.format( crossover_probability ) )
+    #print('crossover_probability (for each gene, for uniform crossover): {}'.format( crossover_probability ) )
 
     ### Number of generations.Specified in inFile.txt.
-    print('number_of_generations: {}'.format( number_of_generations ) )
+    #print('number_of_generations: {}'.format( number_of_generations ) )
 
     ### Set up the initial population.
     ###     Write 'FALSE' in inFile.txt for initialize with a random population.
@@ -1102,7 +1102,7 @@ def main():
         #print('Individual {}: '.format(c) )
         #print(i)
 
-    print('Computing fitnesses for generation 0 ...\n')
+    #print('Computing fitnesses for generation 0 ...\n')
 
     index = np.arange( population_size )
     generation = [ 0 for x in range( population_size ) ]
@@ -1117,7 +1117,7 @@ def main():
     pool.close()
     pool.join()
 
-    print('Generation 0 fitnesses ...\n')
+    #print('Generation 0 fitnesses ...\n')
     #for fitness in fitnesses:
     #    print(fitness)
 
@@ -1125,8 +1125,8 @@ def main():
     for ind, fitness in zip( pop, fitnesses ):
         ind.fitness.values = fitness
 
-    for ind in pop:
-        print( 'ID: {}, fitness: {}'.format( ind.ID, ind.fitness.values ) )
+    #for ind in pop:
+    #    print( 'ID: {}, fitness: {}'.format( ind.ID, ind.fitness.values ) )
 
     #for i, ind in enumerate( pop ):
     #    ind.fitness.values = [i, 0]
@@ -1149,9 +1149,21 @@ def main():
 
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format(year, month, day, next_dir_number)
     with open( generation_population_file_name, 'w' ) as fil:
+        fil.write('initial_population_directory: {}\n'.format( initial_population_directory ) )
+        fil.write('max_number_of_layers: {}\n'.format( max_num_layers ) )
+        fil.write('population_size: {}\n'.format( population_size ) )
+        fil.write('migration_size: {}\n'.format( migration_size ) )
+        fil.write('mutation_probability (for each gene): {}\n'.format( mutation_probability ) )
+        fil.write('crossover_probability: {}\n'.format( crossover_probability ) )
+        fil.write('number_of_generations: {}\n'.format( number_of_generations ) )
+        fil.write('max epochs = {}\n\n'.format( epochs ) )
+
         for ind in pop:
             fil.write( 'ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
-            fil.write( '{}\n\n'.format( ind[0].get_attributes ) )
+            for layer in ind:
+                fil.write( '{}\n'.format( layer.get_attributes ) )
+
+            fil.write('\n')
 
     original_x_dimension_list = [ original_x_dimension for x in range( selection_size - migration_size + 2*migration_size ) ]
     original_y_dimension_list = [ original_y_dimension for y in range( selection_size - migration_size + 2*migration_size ) ]
@@ -1165,7 +1177,7 @@ def main():
             #print(parent.fitness.values)
             parent.type = 'PARENT'
 
-        print('\nGeneration {} ... \n'.format(g))
+        #print('\nGeneration {} ... \n'.format(g))
 
         new_children = []
 
@@ -1181,7 +1193,7 @@ def main():
             new_children.append(child2)
 
         ### Mutate the newly generated children.
-        print('\nMutating the new population (selected parents and their children) ...')
+        #print('\nMutating the new population (selected parents and their children) ...')
         for m, individual in enumerate( new_children ):
             mutated_ind = toolbox.mutate( individual, original_x_dimension, original_y_dimension )
             new_children[m] = mutated_ind
@@ -1194,7 +1206,7 @@ def main():
             child.type = 'CHILD'
 
         ### Add migrants to the new population.
-        print('\nAdding randomly generated migrants to the new population ...')
+        #print('\nAdding randomly generated migrants to the new population ...')
         migrants = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for m in range( migration_size ) ]
 
         mated_migrants = []
@@ -1261,6 +1273,12 @@ def main():
         pop = selected_parents[:-migration_size] + new_population
 
         with open(generation_population_file_name, 'w') as fil:
+            fil.write('max_number_of_layers: {}\n'.format( max_num_layers ) )
+            fil.write('population_size: {}\n'.format( population_size ) )
+            fil.write('migration_size: {}\n'.format( migration_size ) )
+            fil.write('mutation_probability (for each gene): {}\n'.format( mutation_probability ) )
+            fil.write('number_of_generations: {}\n\n'.format( number_of_generations ) )
+
             for ind in pop:
                 if ind.type == 'PARENT':
                     fil.write( '_PARENT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
@@ -1271,7 +1289,10 @@ def main():
                 elif ind.type == 'MIGRANT':
                     fil.write( '_MIGRANT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
 
-                fil.write( '{}\n\n'.format( ind[0].get_attributes ) )
+                for layer in ind:
+                    fil.write( '{}\n'.format( layer.get_attributes ) )
+
+                fil.write('\n')
 
         #print('\nFinal new population in Generation {}...'.format(g) )
         #for c, ind in enumerate(pop):
@@ -1279,12 +1300,12 @@ def main():
         #    print(ind)
 
 
-        print('Generation {} new fitnesses:\n'.format(g))
+        #print('Generation {} new fitnesses:\n'.format(g))
         #for fitness in fitnesses:
         #    print(fitness)
 
-        for ind in pop:
-            print('ID: {}, fitness: {}'.format(ind.ID, ind.fitness.values))        
+        #for ind in pop:
+        #    print('ID: {}, fitness: {}'.format(ind.ID, ind.fitness.values))        
 
 
     pop, fitnesses = 0, 0
