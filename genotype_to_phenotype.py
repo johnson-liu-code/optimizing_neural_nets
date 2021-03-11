@@ -187,12 +187,9 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     ###############################################################################################################################
 
 
-    if first_expressed_layer_added == False:
-        phenotype += ', input_shape=x_train.shape[1:] ) )'
-    else:
-        phenotype += ' ) )'
 
-    if layer.layer_type==6:
+
+    elif layer.layer_type==6:
         phenotype = "model.add(Embedding(" + str(layer.input_dimensionality) + "," + str(layer.output_dimensionality) +"))"
     if layer.layer_type==7:
         phenotype = "model.add(Bidirectional(LSTM(" + str( layer.layervalue ) + ")))"
@@ -208,5 +205,10 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         phenotype = "model.add(LSTM(" + str( layer.layervalue ) + "))"
     if layer.layer_type==13:
         phenotype = "model.add(LayerNormalization())"
+
+    if first_expressed_layer_added == False:
+        phenotype += ', input_shape=x_train.shape[1:] ) )'
+    else:
+        phenotype += ' ) )'
 
     return phenotype

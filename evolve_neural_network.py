@@ -179,7 +179,10 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
     for n, layer in enumerate( individual ):
         ### If layer.expression == 1, this layer is an expressed chromosome.
-        if layer.expression == 1:
+        if first_expressed_layer_added == False and layer.layer_type==6:
+            phenotype = '##### ----- EMPTY LAYER ----- ##### ... ' + get_phenotype(layer, first_expressed_layer_added,previous_x_dimension,previous_y_dimension)
+
+        elif layer.expression == 1:
             phenotype = get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
             first_expressed_layer_added = True
 
