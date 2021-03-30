@@ -1,14 +1,22 @@
 import sys
 import os
+import shutil
 import pickle
+import subprocess
+
 import random
 import numpy as np
-import subprocess
 import math
+import itertools
+
 import time
 import datetime
-import itertools
-from multiprocessing import Pool as ThreadPool
+
+#import multiprocessing
+from multiprocessing import Queue
+from multiprocessing import Process
+#from multiprocessing import Pool
+#from multiprocessing import get_context
 
 import deap
 from deap import base
@@ -106,6 +114,8 @@ if not os.path.isdir( neural_net_dir_number_name ):
 if not os.path.isdir( output_dir_number_name ):
     os.makedirs(output_dir_number_name)
 
+### Copy input file to output directory.
+shutil.copy2( infile_name, output_dir_number_name )
 
 
 class layer_class:
@@ -130,7 +140,7 @@ class layer_class:
                   dropout_rate = 0,
                   pool_x_ratio = 0,
                   pool_y_ratio = 0,
-                  padding = 0):
+                  padding = 0 ):
 
         self.expression = expression
         self.layer_type = layer_type
@@ -167,6 +177,7 @@ class layer_class:
 
 ### Get the fitness of an individual.
 def evaluate( individual, g, original_x_dimension, original_y_dimension ):
+
     ID = individual.ID
 
     ### Convert genotype to phenotype.
@@ -230,10 +241,10 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
     #if zero_layers != num_layers:
     ### Create directories to store the neural networks and the output from the genetic algorithm.
     neural_net_directory_name = 'neural_network_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
-    output_directory_name = 'output_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
+    #output_directory_name = 'output_files/{0}/{0}{1:02d}/{0}{1:02d}{2:02d}/{3:04d}/'.format( year, month, day, next_dir_number )
 
     neural_net_generation_dir_name = neural_net_directory_name + 'generation_{0:05d}/'.format( g )
-    output_generation_dir_name = output_directory_name + 'generation_{0:05d}/'.format( g )
+    #output_generation_dir_name = output_directory_name + 'generation_{0:05d}/'.format( g )
 
     ### Create directories if they do not exist.
     if not os.path.isdir( neural_net_generation_dir_name ):
@@ -242,15 +253,15 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
         except:
             pass
 
-    if not os.path.isdir( output_generation_dir_name ):
-        try:
-            os.makedirs( output_generation_dir_name )
-        except:
-            pass
+    #if not os.path.isdir( output_generation_dir_name ):
+    #    try:
+    #        os.makedirs( output_generation_dir_name )
+    #    except:
+    #        pass
 
     ### Specific name for neural network file and output file.
     run_file_name = neural_net_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_neural_net.py'.format( year, month, day, ID )
-    output_file_name = output_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_output.txt'.format( year, month, day, ID )
+    #output_file_name = output_generation_dir_name + '{0}{1:02d}{2:02d}_individual_{3:04d}_output.txt'.format( year, month, day, ID )
 
     ### Open neural network file and write in some lines.
     with open( run_file_name, 'w' ) as run_file:
@@ -269,7 +280,9 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
         ### Write bottom wrapper to file.
         for line in bot_lines:
             run_file.write( line.split('\n')[0] + '\n' )
-    
+
+    print( 'Running neural network for individual {} ... ... ...'.format( ID ) )
+
     ### Save time at which the job was started.
     #start = time.time()
 
@@ -304,14 +317,46 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
     ### Collect the fitness values.
     #fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-    fitness = [ accuracy, inverse_loss ]
+    fitness = { ID: ( accuracy, inverse_loss ) }
 
     ### Return fitness of 0 if the neural network file did not complete a run for whatever reason.
     #else:
     #   fitness = [ 0, 0 ]
 
     ### Return the fitness value for the individual..
+
     return fitness
+
+def multiprocess_evaluate( individuals, g, original_x_dimension, original_y_dimension ):
+
+    def worker( individual, out_q ):
+        fitness = evaluate( individual, g, original_x_dimension, original_y_dimension )
+        out_q.put( fitness )
+
+    out_q = Queue()
+    procs = []
+
+    for i in range( len( individuals ) ):
+        p = Process( target = worker,
+                     args = ( individuals[i], out_q ) )
+
+        procs.append( p )
+        p.start()
+
+    resultdict = {}
+
+    for i in range( len( individuals ) ):
+        resultdict.update( out_q.get() )
+
+    out_q.close()
+
+    for p in procs:
+        p.join()
+
+    return resultdict
+
+
+
 
 ### Define how individuals mutate.
 def mutation( individual, x_dimension_length, y_dimension_length ):
@@ -549,10 +594,6 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
             layer.padding = np.random.randint( 0, 2 )
-
-        r = np.random.uniform(0, 1)
-        if r <= mutation_probability:
-            layer.layervalue = np.random.randint(2, 10)
 
         ### Add the new mutated layer to the list representing the mutated individual.
         mutated_individual.append( layer )
@@ -824,9 +865,6 @@ def pool_y_ratio():
 def padding():
     return np.random.randint( 0, 2 )
 
-def layervalue():
-    return np.random.randint( 2, 10 )
-
 
 def generate_individual( num_layers, x_dimension_length, y_dimension_length ):
     individual = []
@@ -884,27 +922,26 @@ def seed_population( initial_population_directory ):
                     converted_fields.append( field )
 
                 expression = converted_fields[0]
-                layer_type = converted_fields[1]
-                output_dimensionality = converted_fields[2]
-                kernel_x_ratio = converted_fields[3]
-                kernel_y_ratio = converted_fields[4]
-                stride_x_ratio = converted_fields[5]
-                stride_y_ratio = converted_fields[6]
-                act = converted_fields[7]
-                use_bias = converted_fields[8]
-                bias_init = converted_fields[9]
-                bias_reg = converted_fields[10]
-                bias_reg_l1l2_type = converted_fields[11]
-                act_reg = converted_fields[12]
-                act_reg_l1l2_type = converted_fields[13]
-                kernel_init = converted_fields[14]
-                kernel_reg = converted_fields[15]
-                kernel_reg_l1l2_type = converted_fields[16]
-                dropout_rate = converted_fields[17]
-                pool_x_ratio = converted_fields[18]
-                pool_y_ratio = converted_fields[19]
-                padding = converted_fields[20]
-                layervalue = converted_fields[21]
+                layer_type = convereted_fields[1]
+                output_dimensionality = convereted_fields[2]
+                kernel_x_ratio = convereted_fields[3]
+                kernel_y_ratio = convereted_fields[4]
+                stride_x_ratio = convereted_fields[5]
+                stride_y_ratio = convereted_fields[6]
+                act = convereted_fields[7]
+                use_bias = convereted_fields[8]
+                bias_init = convereted_fields[9]
+                bias_reg = convereted_fields[10]
+                bias_reg_l1l2_type = convereted_fields[11]
+                act_reg = convereted_fields[12]
+                act_reg_l1l2_type = convereted_fields[13]
+                kernel_init = convereted_fields[14]
+                kernel_reg = convereted_fields[15]
+                kernel_reg_l1l2_type = convereted_fields[16]
+                dropout_rate = convereted_fields[17]
+                pool_x_ratio = convereted_fields[18]
+                pool_y_ratio = convereted_fields[19]
+                padding = convereted_fields[20]
 
                 layer = layer_class( expression,
                                      layer_type,
@@ -926,8 +963,7 @@ def seed_population( initial_population_directory ):
                                      dropout_rate,
                                      pool_x_ratio,
                                      pool_y_ratio,
-                                     padding,
-                                     layervalue)
+                                     padding )
 
                 chromosome.append( layer )
 
@@ -1047,7 +1083,7 @@ def main():
 
     #compute_layer_dimensions()
 
-    #print('\n... Running genetic algorithm on neural networks ...\n')
+    print('\n... Running genetic algorithm on neural networks ...\n')
 
     #print('max_number_of_layers: {}'.format( max_num_layers ) )
 
@@ -1078,6 +1114,10 @@ def main():
     ###     Write 'FALSE' in inFile.txt for initialize with a random population.
     ###     Give a directory in inFile.txt from which to get the initial population.
     false_list = ['FALSE', 'false', 'False']
+
+    print('Generation 0 ...\n')
+
+    print('Extracting the initial population (if any) and generating remaining individuals ... \n')
 
     if initial_population_directory not in false_list:
         ### Generate initial set of individuals from the directory containing the zero-th generation of individuals.
@@ -1112,34 +1152,60 @@ def main():
         #print('Individual {}: '.format(c) )
         #print(i)
 
-    #print('Computing fitnesses for generation 0 ...\n')
-
     index = np.arange( population_size )
     generation = [ 0 for x in range( population_size ) ]
 
     original_x_dimension_list = [ original_x_dimension for x in range( population_size ) ]
     original_y_dimension_list = [ original_y_dimension for x in range( population_size ) ]
 
-    pool = ThreadPool( population_size )
+    print('Starting the neural network runs in parallel ... \n')
 
-    fitnesses = pool.starmap( evaluate, zip( pop, generation, original_x_dimension_list, original_y_dimension_list ) )
+    #pool = Pool( population_size )
 
-    pool.close()
-    pool.join()
+    #with get_context('spawn').Pool() as pool:
+    #fitnesses = pool.starmap( evaluate, zip( pop, generation, original_x_dimension_list, original_y_dimension_list ) )
+
+    #pool.close()
+    #pool.join()
+
+    #q = Queue()
+    #processes = []
+
+    #for n in pop:
+    #    t = multiprocessing.Process( target = evaluate, args = ( n, 0, original_x_dimension, original_y_dimension ) )
+    #    processes.append( t )
+    #    t.start()
+
+    #for one_process in processes:
+    #    one_process.join()
+
+    #fitnesses = []
+    #while not q.empty():
+    #    fitnesses.append( q.get() )
+
+    fitness_dict = multiprocess_evaluate( pop, 0, original_x_dimension, original_y_dimension )
+
+    print('fitnesses: '.format(fitness_dict))
+    print('Finished running the neural networks ... \n')
 
     #print('Generation 0 fitnesses ...\n')
     #for fitness in fitnesses:
     #    print(fitness)
 
     ### Save fitness values to individuals.
-    for ind, fitness in zip( pop, fitnesses ):
-        ind.fitness.values = fitness
+    #for ind, fitness in zip( pop, fitnesses ):
+    #    ind.fitness.values = fitness
+
+    for individual in pop:
+        individual.fitness.values = fitness_dict[ individual.ID ]
 
     #for ind in pop:
     #    print( 'ID: {}, fitness: {}'.format( ind.ID, ind.fitness.values ) )
 
     #for i, ind in enumerate( pop ):
     #    ind.fitness.values = [i, 0]
+
+    print('Creating data file to save the fitness and chromosome of each individual ...\n')
 
     ### Create directory to save the data for the 0th generation.
     generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
@@ -1160,15 +1226,23 @@ def main():
     generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format(year, month, day, next_dir_number)
     with open( generation_population_file_name, 'w' ) as fil:
         fil.write('initial_population_directory: {}\n'.format( initial_population_directory ) )
+
         fil.write('max_number_of_layers: {}\n'.format( max_num_layers ) )
+
         fil.write('population_size: {}\n'.format( population_size ) )
+        fil.write('selection_size: {}\n'.format( selection_size ) )
         fil.write('migration_size: {}\n'.format( migration_size ) )
+        fil.write('layer_expression_rate: {}\n'.format( layer_expression_rate ) )
+
         fil.write('mutation_probability (for each gene): {}\n'.format( mutation_probability ) )
         fil.write('crossover_probability: {}\n'.format( crossover_probability ) )
+
         fil.write('number_of_generations: {}\n'.format( number_of_generations ) )
         fil.write('max epochs = {}\n\n'.format( epochs ) )
 
         for ind in pop:
+            print('Writing data to file for _ORIGINAL_ {}'.format( ind.ID ) )
+
             fil.write( 'ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
             for layer in ind:
                 fil.write( '{}\n'.format( layer.get_attributes ) )
@@ -1180,6 +1254,9 @@ def main():
 
     ### Iterate over the generations.
     for g in range( 1, number_of_generations ):
+        print('\nGeneration {} ... \n'.format(g))
+
+        print('Selecting the parents ...\n')
         ### Select the parents.
         selected_parents = toolbox.select( pop, selection_size )
 
@@ -1187,8 +1264,7 @@ def main():
             #print(parent.fitness.values)
             parent.type = 'PARENT'
 
-        #print('\nGeneration {} ... \n'.format(g))
-
+        print('Generating the children ...\n')
         new_children = []
 
         ### Mate the parents to form new individuals (children).
@@ -1202,6 +1278,7 @@ def main():
             new_children.append(child1)
             new_children.append(child2)
 
+        print('Mutating the children ...\n')
         ### Mutate the newly generated children.
         #print('\nMutating the new population (selected parents and their children) ...')
         for m, individual in enumerate( new_children ):
@@ -1215,9 +1292,12 @@ def main():
         for child in new_children:
             child.type = 'CHILD'
 
+        print('Generating the migrants ...\n')
         ### Add migrants to the new population.
         #print('\nAdding randomly generated migrants to the new population ...')
         migrants = [ generate_individual( max_num_layers, original_x_dimension, original_y_dimension ) for m in range( migration_size ) ]
+
+        print('Mating the migrants with some of the parents ...\n')
 
         mated_migrants = []
 
@@ -1235,7 +1315,7 @@ def main():
         mated_migrants = [ creator.Individual( ind ) for ind in mated_migrants ]
 
         for migrant in mated_migrants:
-            migrant.type = 'MATED MIGRANT'
+            migrant.type = 'MATED_MIGRANT'
 
         #migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in migrants ]
         migrants = [ creator.Individual( ind ) for ind in migrants ]
@@ -1258,20 +1338,43 @@ def main():
             new_ind.ID = ID
             ID += 1
 
+        print('Running the neural networks for the new population ...\n')
         generation = [ g for x in range( len( new_population ) ) ]
 
         ### Run the neural networks of the new individuals to compute their fitness.
-        pool = ThreadPool( len(new_population) )
+        #pool = Pool( len(new_population) )
 
-        new_fitnesses = pool.starmap( evaluate, zip(new_population, generation) )
+        #with get_context('spawn').Pool() as pool:
+        #new_fitnesses = pool.starmap( evaluate, zip( new_population, generation, original_x_dimension_list, original_y_dimension_list ) )
 
-        pool.close()
-        pool.join()
- 
+        #pool.close()
+        #pool.join()
+
+        #q = Queue()
+        #processes = []
+
+        #for n in new_population:
+        #    t = multiprocessing.Process( target = evaluate, args = ( n, g, original_x_dimension, original_y_dimension ) )
+        #    processes.append( t )
+        #    t.start()
+
+        #for one_process in processes:
+        #    one_process.join()
+
+        #new_fitnesses = []
+        #while not q.empty():
+        #    new_fitnesses.append( q.get() )
+
+        new_fitness_dict = multiprocess_evaluate( new_population, g, original_x_dimension, original_y_dimension )
+
         ### Assign the fitnesses to the new individuals.
-        for ind, fitness in zip( new_population, new_fitnesses ):
-            ind.fitness.values = fitness
+        #for ind, fitness in zip( new_population, new_fitnesses ):
+        #    ind.fitness.values = fitness
 
+        for individual in new_population:
+            individual.fitness.values = new_fitness_dict[ individual.ID ]
+
+        print('Creating data file to save the fitness and chromosome of each individual ...\n')
         ### Create directory to save the data for the g-th generation.
         generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
         if not os.path.isdir(generation_dir_name):
@@ -1280,16 +1383,26 @@ def main():
         generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.txt'.format(year, month, day, next_dir_number, g)
 
         ### Set pop to be the new population.
-        pop = selected_parents[:-migration_size] + new_population
+        pop = selected_parents + new_population
 
         with open(generation_population_file_name, 'w') as fil:
+            fil.write('initial_population_directory: {}\n'.format( initial_population_directory ) )
             fil.write('max_number_of_layers: {}\n'.format( max_num_layers ) )
+
             fil.write('population_size: {}\n'.format( population_size ) )
+            fil.write('selection_size: {}\n'.format( selection_size ) )
             fil.write('migration_size: {}\n'.format( migration_size ) )
+            fil.write('layer_expression_rate: {}\n'.format( layer_expression_rate ) )
+
             fil.write('mutation_probability (for each gene): {}\n'.format( mutation_probability ) )
-            fil.write('number_of_generations: {}\n\n'.format( number_of_generations ) )
+            fil.write('crossover_probability: {}\n'.format( crossover_probability ) )
+
+            fil.write('number_of_generations: {}\n'.format( number_of_generations ) )
+            fil.write('max epochs = {}\n\n'.format( epochs ) )
 
             for ind in pop:
+                print('Writing data to file for _{}_ {}'.format( ind.type, ind.ID ) )
+
                 if ind.type == 'PARENT':
                     fil.write( '_PARENT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
 
@@ -1298,6 +1411,9 @@ def main():
 
                 elif ind.type == 'MIGRANT':
                     fil.write( '_MIGRANT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+
+                else:
+                    fil.write( '_{}_ ID: {}, fitness: {}\n'.format( ind.type, ind.ID, ind.fitness ) )
 
                 for layer in ind:
                     fil.write( '{}\n'.format( layer.get_attributes ) )
@@ -1315,7 +1431,7 @@ def main():
         #    print(fitness)
 
         #for ind in pop:
-        #    print('ID: {}, fitness: {}'.format(ind.ID, ind.fitness.values))
+        #    print('ID: {}, fitness: {}'.format(ind.ID, ind.fitness.values))        
 
 
     pop, fitnesses = 0, 0
