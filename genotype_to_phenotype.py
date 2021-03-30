@@ -187,24 +187,81 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     ###############################################################################################################################
 
 
-
-
-    elif layer.layer_type==6:
+    ######## Embedding ############################################################################################################
+    elif layer.layer_type==6 or first_expressed_layer_added==False:
         phenotype = "model.add(Embedding(" + str(layer.input_dimensionality) + "," + str(layer.output_dimensionality) +"))"
-    if layer.layer_type==7:
-        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.layervalue ) + ")))"
-    if layer.layer_type==8:
-        phenotype = "model.add(GlobalAveragePooling1D())"
-    if layer.layer_type==9:
-        phenotype = "model.add(Conv1D(" + str( layer.filters) + "," + str( layer.kernel ) + "))"
-    if layer.layer_type==10:
-        phenotype = "model.add(MaxPooling1D(pool_size=" + str( layer.pool) + ", strides=" + str( layer.strides) + r", padding='same'" +"))"
-    if layer.layer_type==11:
+
+    ###############################################################################################################################
+
+
+    ######## LSTM #################################################################################################################
+    elif layer.layer_type==7:
+        phenotype = "model.add(LSTM(" + str( layer.output_dimensionality ) + "))"
+
+    ###############################################################################################################################
+
+
+    ###### Bidirectional ##########################################################################################################
+    elif layer.layer_type==8:
+        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.output_dimensionality ) + ")))"
+
+    ###############################################################################################################################
+
+
+    ######## Conv1D ###############################################################################################################
+    elif layer.layer_type==9:
+        kernel_x = max(1, math.floor(layer.kernel_x_ratio * x_dimension))
+        phenotype = "model.add(Conv1D(" + str( layer.output_dimensionality) + "," + str( kernel_x ) + "))"
+
+    ###############################################################################################################################
+
+
+    ####### MaxPooling1D ##########################################################################################################
+    elif layer.layer_type==10:
+        pool_x = max(1, math.floor(layer.pool_x_ratio * x_dimension))
+        if layer.stride_x_ratio == None or layer.stride_x_ratio == False or layer.stride_x_ratio == -1:
+            stride_x = pool_x
+        else:
+            stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
+        phenotype = "model.add(MaxPooling1D(pool_size=" + str( pool_x) + ", strides=" + str( stride_x)
+        if layer.padding == 0:
+            phenotype += "padding = 'same'"
+        elif layer.padding == 1:
+            phenotype += "padding = 'valid'"
+        phenotype +="))"
+
+    ###############################################################################################################################
+
+
+    ######## GlobalMaxPooling1D ###################################################################################################
+    elif layer.layer_type==11:
         phenotype = "model.add(GlobalMaxPooling1D())"
-    if layer.layer_type==12:
-        phenotype = "model.add(LSTM(" + str( layer.layervalue ) + "))"
-    if layer.layer_type==13:
-        phenotype = "model.add(LayerNormalization())"
+
+    ###############################################################################################################################
+
+
+    ####### AveragePooling1D ######################################################################################################
+    elif layer.layer_type==12:
+        pool_x = max(1, math.floor(layer.pool_x_ratio * x_dimension))
+        if layer.stride_x_ratio == None or layer.stride_x_ratio == False or layer.stride_x_ratio == -1:
+            stride_x = pool_x
+        else:
+            stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
+        phenotype = "model.add(AveragePooling1D(pool_size=" + str( pool_x) + ", strides=" + str( stride_x)
+        if layer.padding == 0:
+            phenotype += "padding = 'same'"
+        elif layer.padding == 1:
+            phenotype += "padding = 'valid'"
+        phenotype +="))"
+
+    ###############################################################################################################################
+
+
+    ######## GlobalAveragePooling1D ###############################################################################################
+    elif layer.layer_type == 13:
+        phenotype = "model.add(GlobalAveragePooling1D())"
+
+    ###############################################################################################################################
 
     if first_expressed_layer_added == False:
         phenotype += ', input_shape=x_train.shape[1:] ) )'

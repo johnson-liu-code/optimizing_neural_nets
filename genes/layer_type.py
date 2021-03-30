@@ -8,18 +8,18 @@ layer_type = {  0: "Dense",
                 4: "MaxPooling2D",
                 5: "AveragePooling2D",
                 6: "Embedding",
-                7: "Bidirectional",
-                8: "GlobalAveragePooling1D",
+                7: "LSTM",
+                8: "Bidirectional",
                 9: "Conv1D",
                 10: "MaxPooling1D",
                 11: "GlobalMaxPooling1D",
-                12: "LSTM",
-                13: "LayerNormalization"
+                12: "AveragePooling1D",
+                13: "GlobalAveragePooling1D"
                 }
 
-layers_with_dimensionality_input = [6]
-layers_with_layer = [7, 12]
-layers_with_filters = [9]
+layers_with_dimensionality_input = [6] #Embedding",
+layers_with_layer = [7, 12] #Bidirectional",LSTM
+layers_with_filters = [9] #Conv1D",
 
 
 
