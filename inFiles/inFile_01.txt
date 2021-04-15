@@ -7,6 +7,6 @@ mutation_probability = .2
 crossover_probability = .5
 number_of_generations = 1000
 batch_size = 100
-number_of_classes = 10
+number_of_classes = 46
 epochs = 100
 initial_population_directory = FALSE

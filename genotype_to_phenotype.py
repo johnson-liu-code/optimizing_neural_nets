@@ -9,8 +9,16 @@ from genes.kernel_initializer_type import kernel_initializer_type
 
 
 def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension ):
+    ########### Embedding layer ###################################################################################################
+    if first_expressed_layer_added == False:
+        phenotype = "model.add(Embedding(10000," + str(layer.output_dimensionality) + ", input_length=200" +" ) )"
+        return phenotype
+
+    ###############################################################################################################################
+
+
     ########### Dense layer. ######################################################################################################
-    if layer.layer_type == 0:
+    elif layer.layer_type == 0:
         phenotype  = 'model.add( Dense( units = {}, '.format( layer.output_dimensionality )
         phenotype += 'activation = {}, '.format( activation_type[ layer.act ] )
         phenotype += 'use_bias = {}, '.format( use_bias[ layer.use_bias ] )
@@ -187,37 +195,30 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     ###############################################################################################################################
 
 
-    ######## Embedding ############################################################################################################
-    elif layer.layer_type==6 or first_expressed_layer_added==False:
-        phenotype = "model.add(Embedding(" + str(layer.input_dimensionality) + "," + str(layer.output_dimensionality) +"))"
-
-    ###############################################################################################################################
-
-
     ######## LSTM #################################################################################################################
-    elif layer.layer_type==7:
-        phenotype = "model.add(LSTM(" + str( layer.output_dimensionality ) + "))"
+    elif layer.layer_type==6:
+        phenotype = "model.add(LSTM(" + str( layer.output_dimensionality )
 
     ###############################################################################################################################
 
 
     ###### Bidirectional ##########################################################################################################
-    elif layer.layer_type==8:
-        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.output_dimensionality ) + ")))"
+    elif layer.layer_type==7:
+        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.output_dimensionality ) + ")"
 
     ###############################################################################################################################
 
 
     ######## Conv1D ###############################################################################################################
-    elif layer.layer_type==9:
+    elif layer.layer_type==8:
         kernel_x = max(1, math.floor(layer.kernel_x_ratio * x_dimension))
-        phenotype = "model.add(Conv1D(" + str( layer.output_dimensionality) + "," + str( kernel_x ) + "))"
+        phenotype = "model.add(Conv1D(" + str( layer.output_dimensionality) + "," + str( kernel_x )
 
     ###############################################################################################################################
 
 
     ####### MaxPooling1D ##########################################################################################################
-    elif layer.layer_type==10:
+    elif layer.layer_type==9:
         pool_x = max(1, math.floor(layer.pool_x_ratio * x_dimension))
         if layer.stride_x_ratio == None or layer.stride_x_ratio == False or layer.stride_x_ratio == -1:
             stride_x = pool_x
@@ -228,20 +229,19 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
             phenotype += "padding = 'same'"
         elif layer.padding == 1:
             phenotype += "padding = 'valid'"
-        phenotype +="))"
 
     ###############################################################################################################################
 
 
     ######## GlobalMaxPooling1D ###################################################################################################
-    elif layer.layer_type==11:
-        phenotype = "model.add(GlobalMaxPooling1D())"
+    elif layer.layer_type==10:
+        phenotype = "model.add(GlobalMaxPooling1D("
 
     ###############################################################################################################################
 
 
     ####### AveragePooling1D ######################################################################################################
-    elif layer.layer_type==12:
+    elif layer.layer_type==11:
         pool_x = max(1, math.floor(layer.pool_x_ratio * x_dimension))
         if layer.stride_x_ratio == None or layer.stride_x_ratio == False or layer.stride_x_ratio == -1:
             stride_x = pool_x
@@ -252,14 +252,13 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
             phenotype += "padding = 'same'"
         elif layer.padding == 1:
             phenotype += "padding = 'valid'"
-        phenotype +="))"
 
     ###############################################################################################################################
 
 
     ######## GlobalAveragePooling1D ###############################################################################################
-    elif layer.layer_type == 13:
-        phenotype = "model.add(GlobalAveragePooling1D())"
+    elif layer.layer_type == 12:
+        phenotype = "model.add(GlobalAveragePooling1D("
 
     ###############################################################################################################################
 

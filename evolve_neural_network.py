@@ -34,7 +34,7 @@ np.random.seed(7)
 
 
 #infile_name = sys.argv[1]
-infile_name='initial_population/AlexNet_01/ind_000.txt'
+infile_name='inFiles/inFile_01.txt'
 
 with open( infile_name, 'r' ) as fil:
     lines = fil.readlines()
@@ -191,7 +191,29 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
     for n, layer in enumerate( individual ):
         ### If layer.expression == 1, this layer is an expressed chromosome.
-        if layer.expression == 1:
+        if first_expressed_layer_added == False:
+            phenotype = get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
+            first_expressed_layer_added = True
+
+            if layer.layer_type in layers_with_kernel or layer.layer_type in layers_with_pooling:
+                if layer.layer_type in layers_with_kernel:
+                    kernel_or_pool_x_ratio = layer.kernel_x_ratio
+                    kernel_or_pool_y_ratio = layer.kernel_y_ratio
+
+                elif layer.layer_type in layers_with_pooling:
+                    kernel_or_pool_x_ratio = layer.pool_x_ratio
+                    kernel_or_pool_y_ratio = layer.pool_y_ratio
+
+                if layer.layer_type == 2 or layer.layer_type == 3:
+                    output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_x_ratio, previous_x_dimension, previous_y_dimension )
+                else:
+                    output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
+
+                previous_x_dimension = output_x_dimension
+                previous_y_dimension = output_y_dimension
+
+
+        elif layer.expression == 1:
             phenotype = get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
             first_expressed_layer_added = True
 
@@ -390,7 +412,7 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
         ### Mutate layer type. The value is in the range 0:5 (inclusive).
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer.layer_type = np.random.randint( 6,14 )
+            layer.layer_type = np.random.randint( 6,13 )
 
         ### Mutate the output dimensionality.
         r = np.random.uniform( 0, 1 )
@@ -791,7 +813,7 @@ def expression():                        ### Return 0 (skip layer), 1 (use layer
     #return 1
 
 def layer_type():                       ### Return random integer between 0 and 5 for layer type.
-    return np.random.randint( 6,14 )
+    return np.random.randint( 6,13 )
 
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     return np.random.randint( 2, 101 )
@@ -922,26 +944,26 @@ def seed_population( initial_population_directory ):
                     converted_fields.append( field )
 
                 expression = converted_fields[0]
-                layer_type = convereted_fields[1]
-                output_dimensionality = convereted_fields[2]
-                kernel_x_ratio = convereted_fields[3]
-                kernel_y_ratio = convereted_fields[4]
-                stride_x_ratio = convereted_fields[5]
-                stride_y_ratio = convereted_fields[6]
-                act = convereted_fields[7]
-                use_bias = convereted_fields[8]
-                bias_init = convereted_fields[9]
-                bias_reg = convereted_fields[10]
-                bias_reg_l1l2_type = convereted_fields[11]
-                act_reg = convereted_fields[12]
-                act_reg_l1l2_type = convereted_fields[13]
-                kernel_init = convereted_fields[14]
-                kernel_reg = convereted_fields[15]
-                kernel_reg_l1l2_type = convereted_fields[16]
-                dropout_rate = convereted_fields[17]
-                pool_x_ratio = convereted_fields[18]
-                pool_y_ratio = convereted_fields[19]
-                padding = convereted_fields[20]
+                layer_type = converted_fields[1]
+                output_dimensionality = converted_fields[2]
+                kernel_x_ratio = converted_fields[3]
+                kernel_y_ratio = converted_fields[4]
+                stride_x_ratio = converted_fields[5]
+                stride_y_ratio = converted_fields[6]
+                act = converted_fields[7]
+                use_bias = converted_fields[8]
+                bias_init = converted_fields[9]
+                bias_reg = converted_fields[10]
+                bias_reg_l1l2_type = converted_fields[11]
+                act_reg = converted_fields[12]
+                act_reg_l1l2_type = converted_fields[13]
+                kernel_init = converted_fields[14]
+                kernel_reg = converted_fields[15]
+                kernel_reg_l1l2_type = converted_fields[16]
+                dropout_rate = converted_fields[17]
+                pool_x_ratio = converted_fields[18]
+                pool_y_ratio = converted_fields[19]
+                padding = converted_fields[20]
 
                 layer = layer_class( expression,
                                      layer_type,
@@ -995,13 +1017,18 @@ def crossover( parent1, parent2, crossover_probability ):
     return child1, child2
 
 
-### Extract training data.
-with open('../x_train.pkl', 'rb') as pkl_file:
-    x_train = pickle.load( pkl_file, encoding = 'latin1' )
+# ### Extract training data.
+# with open('../x_train.pkl', 'rb') as pkl_file:
+#     x_train = pickle.load( pkl_file, encoding = 'latin1' )
+#
+# ### Get dimension of data (size of x and y dimensions).
+# original_x_dimension = x_train.shape[1]
+# original_y_dimension = x_train.shape[2]
+# previous_x_dimension = original_x_dimension
+# previous_y_dimension = original_y_dimension
 
-### Get dimension of data (size of x and y dimensions).
-original_x_dimension = x_train.shape[1]
-original_y_dimension = x_train.shape[2]
+original_x_dimension = 10000
+original_y_dimension = 1
 previous_x_dimension = original_x_dimension
 previous_y_dimension = original_y_dimension
 

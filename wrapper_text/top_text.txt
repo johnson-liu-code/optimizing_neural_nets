@@ -40,14 +40,17 @@ data_augmentation = True
 # with open( '/exports/home/j_liu21/projects/genetic_algorithms/x_train.pkl', 'rb' ) as x_train_pkl_file:
 #     x_train = pickle.load( x_train_pkl_file, encoding='latin1' )
 
-vocab_size = 20000  # Only consider the top 20k words
-maxlen = 200  # Only consider the first 200 words of each movie review
-(x_train, y_train), (x_test, y_test) = reuters.load_data(num_words=vocab_size)
-
+vocab_size = 10000  # Only consider the top 20k words
+max_len = 200  # Only consider the first 200 words of each movie review
+(x_train, y_train), (x_test, y_test) = reuters.load_data(num_words=vocab_size,maxlen=max_len)
+x_train = keras.preprocessing.sequence.pad_sequences(x_train, maxlen=max_len, padding='post')
+x_test = keras.preprocessing.sequence.pad_sequences(x_test, maxlen=max_len, padding='post')
+y_train = keras.utils.to_categorical(y_train, 46)
+y_test = keras.utils.to_categorical(y_test, 46)
 ############################################################
 x_train_data_len = len(x_train)
-x_train_train = x_train[0:10000]
-x_train_valid = x_train[10000:20000]
+x_train_train = x_train
+x_train_valid = x_test
 ############################################################
 
 ### Load y training data.
@@ -55,8 +58,8 @@ x_train_valid = x_train[10000:20000]
 #     y_train = pickle.load( y_train_pkl_file, encoding='latin1' )
 
 ############################################################
-y_train_train = y_train[0:10000]
-y_train_valid = y_train[10000:20000]
+y_train_train = y_train
+y_train_valid = y_test
 ############################################################
 
 ### Load x testing data.
