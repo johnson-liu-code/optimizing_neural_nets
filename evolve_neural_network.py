@@ -33,8 +33,8 @@ from genes.layer_type import layers_with_pooling
 np.random.seed(7)
 
 
-#infile_name = sys.argv[1]
-infile_name='inFiles/inFile_01.txt'
+infile_name = sys.argv[1]
+#infile_name='inFiles/inFile_01.txt'
 
 with open( infile_name, 'r' ) as fil:
     lines = fil.readlines()
