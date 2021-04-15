@@ -13,7 +13,8 @@ layer_type = {  0: "Dense",
                 9: "MaxPooling1D",
                 10: "GlobalMaxPooling1D",
                 11: "AveragePooling1D",
-                12: "GlobalAveragePooling1D"
+                12: "GlobalAveragePooling1D",
+                13: "Dense"
                 }
 
 layers_with_layer = [6] #LSTM

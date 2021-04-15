@@ -18,7 +18,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
 
 
     ########### Dense layer. ######################################################################################################
-    elif layer.layer_type == 0:
+    elif layer.layer_type == 0 or layer.layer_type == 13 :
         phenotype  = 'model.add( Dense( units = {}, '.format( layer.output_dimensionality )
         phenotype += 'activation = {}, '.format( activation_type[ layer.act ] )
         phenotype += 'use_bias = {}, '.format( use_bias[ layer.use_bias ] )

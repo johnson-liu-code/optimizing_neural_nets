@@ -412,7 +412,7 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
         ### Mutate layer type. The value is in the range 0:5 (inclusive).
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer.layer_type = np.random.randint( 6,13 )
+            layer.layer_type = np.random.randint( 6,14 )
 
         ### Mutate the output dimensionality.
         r = np.random.uniform( 0, 1 )
@@ -813,7 +813,7 @@ def expression():                        ### Return 0 (skip layer), 1 (use layer
     #return 1
 
 def layer_type():                       ### Return random integer between 0 and 5 for layer type.
-    return np.random.randint( 6,13 )
+    return np.random.randint( 6,14 )
 
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     return np.random.randint( 2, 101 )
