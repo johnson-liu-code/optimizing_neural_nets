@@ -224,7 +224,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
             stride_x = pool_x
         else:
             stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
-        phenotype = "model.add(MaxPooling1D(pool_size=" + str( pool_x) + ", strides=" + str( stride_x)
+        phenotype = "model.add(MaxPooling1D(pool_size=" + str( pool_x) + ", strides=" + str( stride_x)+ ", "
         if layer.padding == 0:
             phenotype += "padding = 'same'"
         elif layer.padding == 1:
@@ -247,7 +247,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
             stride_x = pool_x
         else:
             stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
-        phenotype = "model.add(AveragePooling1D(pool_size=" + str( pool_x) + ", strides=" + str( stride_x)
+        phenotype = "model.add(AveragePooling1D(pool_size=" + str( pool_x) + ", strides=" + str( stride_x) + ", "
         if layer.padding == 0:
             phenotype += "padding = 'same'"
         elif layer.padding == 1:
