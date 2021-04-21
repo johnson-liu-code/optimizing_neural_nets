@@ -11,24 +11,24 @@ layer_type = {  0: "Dense",
                 7: "Bidirectional",
                 8: "Conv1D",
                 9: "MaxPooling1D",
-                10: "GlobalMaxPooling1D",
-                11: "AveragePooling1D",
-                12: "GlobalAveragePooling1D",
-                13: "Dense"
+                # 10: "GlobalMaxPooling1D",
+                10: "AveragePooling1D",
+                # 12: "GlobalAveragePooling1D",
+                11: "Dense"
                 }
 
-layers_with_layer = [6] #LSTM
-layers_with_filters = [8] #Conv1D",
+# layers_with_layer = [6] #LSTM
+# layers_with_filters = [8] #Conv1D",
 
 
 
-layers_with_padding = [1, 2, 3, 4, 5]
-layers_with_kernel = [1, 2, 3, 9]
-layers_with_activation = [0, 1, 2, 3]
-layers_with_dimensionality = [0, 1, 2, 6]
-layers_with_pooling = [4, 5, 10]
-layers_needing_strides = [1, 2, 3, 4, 5, 10]
-layers_with_kernel_regularizer = [0, 1]
+layers_with_padding = [1, 2, 3, 4, 5, 9 ,10]
+layers_with_kernel = [1, 2, 3]
+layers_with_activation = [0, 1, 2, 3, 11]
+layers_with_dimensionality = [0, 1, 2, 6 ,7, 8, 11]
+layers_with_pooling = [4, 5, 9 ,10]
+layers_needing_strides = [1, 2, 3, 4, 5, 9, 10]
+layers_with_kernel_regularizer = [0, 1, 11]
 #layers_with_kernel_constraint = [0, 1]
 #layers_with_bias_constraint = [0, 1, 2, 3]
 layers_with_dilation_rate = [1, 2, 3]

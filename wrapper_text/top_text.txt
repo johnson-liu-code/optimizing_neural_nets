@@ -46,8 +46,8 @@ max_len = 200  # Only consider the first 200 words of each movie review
 (x_train, y_train), (x_test, y_test) = reuters.load_data(num_words=vocab_size,maxlen=max_len)
 x_train = keras.preprocessing.sequence.pad_sequences(x_train, maxlen=max_len, padding='post')
 x_test = keras.preprocessing.sequence.pad_sequences(x_test, maxlen=max_len, padding='post')
-y_train = keras.utils.to_categorical(y_train, 46)
-y_test = keras.utils.to_categorical(y_test, 46)
+y_train = keras.utils.to_categorical(y_train, number_of_classes)
+y_test = keras.utils.to_categorical(y_test, number_of_classes)
 ############################################################
 x_train_data_len = len(x_train)
 x_train_train = x_train

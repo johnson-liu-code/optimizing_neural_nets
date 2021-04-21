@@ -18,7 +18,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
 
 
     ########### Dense layer. ######################################################################################################
-    elif layer.layer_type == 0 or layer.layer_type == 13 :
+    elif layer.layer_type == 0 or layer.layer_type == 11 :
         phenotype  = 'model.add( Dense( units = {}, '.format( layer.output_dimensionality )
         phenotype += 'activation = {}, '.format( activation_type[ layer.act ] )
         phenotype += 'use_bias = {}, '.format( use_bias[ layer.use_bias ] )
@@ -233,15 +233,15 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     ###############################################################################################################################
 
 
-    ######## GlobalMaxPooling1D ###################################################################################################
-    elif layer.layer_type==10:
-        phenotype = "model.add(GlobalMaxPooling1D("
-
-    ###############################################################################################################################
+    # ######## GlobalMaxPooling1D ###################################################################################################
+    # elif layer.layer_type==10:
+    #     phenotype = "model.add(GlobalMaxPooling1D("
+    #
+    # ###############################################################################################################################
 
 
     ####### AveragePooling1D ######################################################################################################
-    elif layer.layer_type==11:
+    elif layer.layer_type==10:
         pool_x = max(1, math.floor(layer.pool_x_ratio * x_dimension))
         if layer.stride_x_ratio == None or layer.stride_x_ratio == False or layer.stride_x_ratio == -1:
             stride_x = pool_x
@@ -256,11 +256,11 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
     ###############################################################################################################################
 
 
-    ######## GlobalAveragePooling1D ###############################################################################################
-    elif layer.layer_type == 12:
-        phenotype = "model.add(GlobalAveragePooling1D("
-
-    ###############################################################################################################################
+    # ######## GlobalAveragePooling1D ###############################################################################################
+    # elif layer.layer_type == 12:
+    #     phenotype = "model.add(GlobalAveragePooling1D("
+    #
+    # ###############################################################################################################################
 
     if first_expressed_layer_added == False:
         phenotype += ', input_shape=x_train.shape[1:] ) )'
