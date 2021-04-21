@@ -197,14 +197,14 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
 
     ######## LSTM #################################################################################################################
     elif layer.layer_type==6:
-        phenotype = "model.add(LSTM(" + str( layer.output_dimensionality )
+        phenotype = "model.add(LSTM(" + str( layer.output_dimensionality ) + ", return_sequences=True"
 
     ###############################################################################################################################
 
 
     ###### Bidirectional ##########################################################################################################
     elif layer.layer_type==7:
-        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.output_dimensionality ) + ")"
+        phenotype = "model.add(Bidirectional(LSTM(" + str( layer.output_dimensionality ) + ", return_sequences=True)"
 
     ###############################################################################################################################
 
