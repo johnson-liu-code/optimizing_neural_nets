@@ -63,30 +63,32 @@ datagen.fit(x_train_train)
 
 t0 = time.time()
 
-model.fit_generator(datagen.flow(x_train_train, y_train_train, batch_size = batch_size),
-                                 steps_per_epoch = 100,
-                                 epochs = epochs,
-                                 validation_data = (x_train_valid, y_train_valid),
-                                 workers = 8,
-                                 callbacks = [es],
-                                 verbose = 2 )
+m = model.fit_generator( datagen.flow( x_train_train, y_train_train, batch_size = batch_size),
+                                       steps_per_epoch = 100,
+                                       epochs = epochs,
+                                       validation_data = (x_train_valid, y_train_valid),
+                                       workers = 8,
+                                       callbacks = [es],
+                                       verbose = 0 )
+
+n_epochs = len( m.history['loss'] )
 
 t1 = time.time()
 model_training_time = t1-t0
-print('model_training_time: ', model_training_time)
+#print('model_training_time: ', model_training_time)
 
 # Score trained model.
 t2 = time.time()
 scores_train_train = model.evaluate(x_train_train, y_train_train, verbose = 0)
 t3 = time.time()
 train_eval_time = t3-t2
-print('train_eval_time: ', train_eval_time)
+#print('train_eval_time: ', train_eval_time)
 
 t4 = time.time()
 scores_test = model.evaluate(x_test, y_test, verbose = 0)
 t5 = time.time()
 test_eval_time = t5-t4
-print('test_eval_time: ', test_eval_time)
+#print('test_eval_time: ', test_eval_time)
 
 
 #scheduler.shutdown()
@@ -94,4 +96,4 @@ print('test_eval_time: ', test_eval_time)
 
 #print('Training_loss: {} Test_accuracy: {} Mem: {} CPU_time: {}'.format(scores_train_train[0], scores_test[1], mmem, cpu_time) )
 
-print('Training_loss: {} Test_accuracy: {} '.format(scores_train_train[0], scores_test[1]) )
+print('Training_loss: {} Test_accuracy: {} n_epochs: {} model_training_time: {} train_eval_time: {} test_eval_time: {}'.format( scores_train_train[0], scores_test[1], n_epochs, model_training_time, train_eval_time, test_eval_time ) )
