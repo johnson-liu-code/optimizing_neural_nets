@@ -31,7 +31,7 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(get_info, 'interval', seconds=1)
 '''
 
-data_augmentation = True
+data_augmentation = False
 
 
 ############################################################
