@@ -12,10 +12,12 @@ import itertools
 import time
 import datetime
 
-#import multiprocessing
+import multiprocessing
 from multiprocessing import Queue
 from multiprocessing import Process
 #from multiprocessing import Pool
+#from multiprocessing import set_start_method
+#set_start_method( 'spawn' )
 #from multiprocessing import get_context
 
 import deap
@@ -41,22 +43,29 @@ with open( infile_name, 'r' ) as fil:
 ### Number of layers beyond the first layer. The first layer is a
 ### special layer that cannot be a flatten or dropout layer.
 max_num_layers = int( lines[0].split()[2] )
-population_size = int( lines[1].split()[2] )
+possible_layer_types_line = lines[1]
+#print(possible_layer_types_line)
+possible_layer_types_string = possible_layer_types_line.split()[2].split()[0]
+possible_layer_types = [ int(x) for x in possible_layer_types_string.split('_') ]
+#print(possible_layer_types)
 
-selection_size = int( lines[2].split()[2] )
-migration_size = int( lines[3].split()[2] )
+population_size = int( lines[2].split()[2] )
+selection_size = int( lines[3].split()[2] )
+migration_size = int( lines[4].split()[2] )
 
-layer_expression_rate = float( lines[4].split()[2] )
-mutation_probability = float( lines[5].split()[2] )
+layer_expression_rate = float( lines[5].split()[2] )
+mutation_probability = float( lines[6].split()[2] )
 
-crossover_probability = float( lines[6].split()[2] )
-number_of_generations = int( lines[7].split()[2] )
+crossover_probability = float( lines[7].split()[2] )
 
-batch_size = int( lines[8].split()[2] )
-number_of_classes = int( lines[9].split()[2] )
+number_of_generations = int( lines[8].split()[2] )
 
-epochs = int( lines[10].split()[2] )
-initial_population_directory = lines[11].split()[2]
+batch_size = int( lines[9].split()[2] )
+number_of_classes = int( lines[10].split()[2] )
+
+epochs = int( lines[11].split()[2] )
+
+initial_population_directory = lines[12].split()[2]
 
 ### Top and bottom wrapper text to be used in making the neural network.
 top_file = 'wrapper_text/top_text.txt'
@@ -299,24 +308,31 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
     ### Capture the output of the job.
     out = proc.communicate()[0].decode( 'utf-8' )
-    #print('ID: {}, out: {}'.format(ID, out) )
+    #print('ID: {}\nout: {}'.format( ID, out ) )
     #print(out.upper().split()[-2], out.upper().split()[-1])
     #print(out.upper().split()[-4], out.upper().split()[-3])
     try:
+        #extracted_text = out.upper().split()
         ### Get the accuracy.
-        accuracy = float( out.upper().split()[-1] )
+        accuracy = float( out.upper().split()[-9] )
+        #accuracy = float( extracted_text[-9] )
         ### Compute the inverse loss.
-        inverse_loss = 1./float( out.upper().split()[-3] )
+        inverse_loss = 1/float( out.upper().split()[-11] )
+        #inverse_loss = 1/float( extract_text[-3] )
+        n_epochs = int(out.upper().split()[-7])
+
     except:
         accuracy = 0
         inverse_loss = 100
+        n_epochs = 'NA'
 
     #inverse_mem = 1./float(out.upper().split()[-3])
     #inverse_cpu = 1./float(out.upper().split()[-1])
 
     ### Collect the fitness values.
     #fitness = ( accuracy, inverse_loss, inverse_duration, inverse_mem, inverse_cpu )
-    fitness = { ID: ( accuracy, inverse_loss ) }
+    fitness = { ID: ( accuracy, inverse_loss, n_epochs ) }
+    #print(fitness)
 
     ### Return fitness of 0 if the neural network file did not complete a run for whatever reason.
     #else:
@@ -326,11 +342,15 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
     return fitness
 
+
+### This works, but there is an issue with deadlock when there's too much data in the queue.
 def multiprocess_evaluate( individuals, g, original_x_dimension, original_y_dimension ):
 
     def worker( individual, out_q ):
         fitness = evaluate( individual, g, original_x_dimension, original_y_dimension )
         out_q.put( fitness )
+
+    print( 'Number of cpus: {}'.format( multiprocessing.cpu_count() ) )
 
     out_q = Queue()
     procs = []
@@ -342,10 +362,14 @@ def multiprocess_evaluate( individuals, g, original_x_dimension, original_y_dime
         procs.append( p )
         p.start()
 
+    print( 'out_q: {}'.format( out_q ) )
+
     resultdict = {}
 
     for i in range( len( individuals ) ):
-        resultdict.update( out_q.get() )
+        #resultdict.update( out_q.get() )
+        o = out_q.get()
+        resultdict.update( o )
 
     out_q.close()
 
@@ -355,7 +379,38 @@ def multiprocess_evaluate( individuals, g, original_x_dimension, original_y_dime
     return resultdict
 
 
+def multiprocess_evaluate_2( individuals, g, original_x_dimension, original_y_dimension ):
+    pool = multiprocessing.Pool()
+    pool_results = []
 
+    for individual in individuals:
+        pool_results.append( pool.apply_async( evaluate,
+                                               args = ( individual, g,
+                                                        original_x_dimension,
+                                                        original_y_dimension ) ) )
+
+    results = {}
+
+    pool.close()
+    while len( pool_results ) > 0:
+        to_remove = [] #avoid removing objects during for_loop
+        for r in pool_results:
+            # check if process is finished
+            if r.ready():
+                # print result (or do any operation with result)
+                #print( r.get() )
+                f = r.get()
+                results.update( f )
+                to_remove.append( r )
+
+        for remove in to_remove:
+            pool_results.remove( remove )
+
+        time.sleep(1) # ensures that this thread doesn't consume too much memory
+
+    pool.join() # make sure all processes are completed
+
+    return results
 
 ### Define how individuals mutate.
 def mutation( individual, x_dimension_length, y_dimension_length ):
@@ -789,8 +844,9 @@ def expression():                        ### Return 0 (skip layer), 1 (use layer
     return np.random.randint( 0, 2 )
     #return 1
 
-def layer_type():                       ### Return random integer between 0 and 5 for layer type.
-    return np.random.randint( 6 )
+def layer_type():                       ### Return a random layer type out of the possible layer types.
+    index = np.random.randint( len( possible_layer_types ) )
+    return possible_layer_types[ index ]
 
 def output_dimensionality():            ### Return random integer between 2 and 100 for number of output_dimensionality for layer.
     return np.random.randint( 2, 101 )
@@ -1006,7 +1062,7 @@ previous_y_dimension = original_y_dimension
 
 
 creator.create( 'FitnessMax', base.Fitness, weights = (1., 1.) )
-creator.create( 'Individual', list, fitness = creator.FitnessMax, ID = 0, type = 'NA' )
+creator.create( 'Individual', list, fitness = creator.FitnessMax, ID = 0, type = 'NA', n_epochs = 'NA' )
 
 
 toolbox = base.Toolbox()
@@ -1157,7 +1213,7 @@ def main():
     original_x_dimension_list = [ original_x_dimension for x in range( population_size ) ]
     original_y_dimension_list = [ original_y_dimension for x in range( population_size ) ]
 
-    print('Starting the neural network runs in parallel ... \n')
+    print('Starting the neural network runs in parallel for generation 0 ...\n')
 
     #pool = Pool( population_size )
 
@@ -1182,9 +1238,10 @@ def main():
     #while not q.empty():
     #    fitnesses.append( q.get() )
 
-    fitness_dict = multiprocess_evaluate( pop, 0, original_x_dimension, original_y_dimension )
+    #fitness_dict = multiprocess_evaluate( pop, 0, original_x_dimension, original_y_dimension )
+    fitness_dict = multiprocess_evaluate_2( pop, 0, original_x_dimension, original_y_dimension )
 
-    print('fitnesses: '.format(fitness_dict))
+    print('fitnesses: {}\n'.format( fitness_dict ) )
     print('Finished running the neural networks ... \n')
 
     #print('Generation 0 fitnesses ...\n')
@@ -1196,7 +1253,8 @@ def main():
     #    ind.fitness.values = fitness
 
     for individual in pop:
-        individual.fitness.values = fitness_dict[ individual.ID ]
+        individual.fitness.values = fitness_dict[ individual.ID ][:2]
+        individual.n_epochs = fitness_dict[ individual.ID ][2]
 
     #for ind in pop:
     #    print( 'ID: {}, fitness: {}'.format( ind.ID, ind.fitness.values ) )
@@ -1242,7 +1300,7 @@ def main():
         for ind in pop:
             print('Writing data to file for _ORIGINAL_ {}'.format( ind.ID ) )
 
-            fil.write( 'ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+            fil.write( '_ORIGINAL_ ID: {}, fitness: {}, n_epochs: {}\n'.format( ind.ID, ind.fitness, ind.n_epochs ) )
             for layer in ind:
                 fil.write( '{}\n'.format( layer.get_attributes ) )
 
@@ -1364,14 +1422,20 @@ def main():
         #while not q.empty():
         #    new_fitnesses.append( q.get() )
 
-        new_fitness_dict = multiprocess_evaluate( new_population, g, original_x_dimension, original_y_dimension )
+        print('Starting the neural network runs in parallel for generation {} ...\n'.format( g ) )
+
+        #new_fitness_dict = multiprocess_evaluate( new_population, g, original_x_dimension, original_y_dimension )
+        new_fitness_dict = multiprocess_evaluate_2( new_population, g, original_x_dimension, original_y_dimension )
+
+        print('new_fitnesses: {}'.format(new_fitness_dict))
 
         ### Assign the fitnesses to the new individuals.
         #for ind, fitness in zip( new_population, new_fitnesses ):
         #    ind.fitness.values = fitness
 
         for individual in new_population:
-            individual.fitness.values = new_fitness_dict[ individual.ID ]
+            individual.fitness.values = new_fitness_dict[ individual.ID ][:2]
+            individual.n_epochs = new_fitness_dict[ individual.ID ][2]
 
         print('Creating data file to save the fitness and chromosome of each individual ...\n')
         ### Create directory to save the data for the g-th generation.
@@ -1402,17 +1466,17 @@ def main():
             for ind in pop:
                 print('Writing data to file for _{}_ {}'.format( ind.type, ind.ID ) )
 
-                if ind.type == 'PARENT':
-                    fil.write( '_PARENT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+                if ind.type == 'PARENT' or ind.type == 'CHILD' or ind.type == 'MIGRANT':
+                    fil.write( '_{}_ ID: {}, fitness: {}, n_epochs: {}\n'.format( ind.type, ind.ID, ind.fitness, ind.n_epochs ) )
 
-                elif ind.type == 'CHILD':
-                    fil.write( '_CHILD_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+                #elif ind.type == 'CHILD':
+                #    fil.write( '_CHILD_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
 
-                elif ind.type == 'MIGRANT':
-                    fil.write( '_MIGRANT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
+                #elif ind.type == 'MIGRANT':
+                #    fil.write( '_MIGRANT_ ID: {}, fitness: {}\n'.format( ind.ID, ind.fitness ) )
 
                 else:
-                    fil.write( '_{}_ ID: {}, fitness: {}\n'.format( ind.type, ind.ID, ind.fitness ) )
+                    fil.write( '_{}_ ID: {}, fitness: {}, n_epochs: {}\n'.format( ind.type, ind.ID, ind.fitness, ind.n_epochs ) )
 
                 for layer in ind:
                     fil.write( '{}\n'.format( layer.get_attributes ) )
@@ -1440,3 +1504,4 @@ def main():
 
 if __name__ == '__main__':
     pop, fitnesses = main()
+    #print('end test')
