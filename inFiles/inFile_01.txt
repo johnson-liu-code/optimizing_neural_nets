@@ -1,13 +1,13 @@
 maximum_number_of_layers = 10
 layer_types = 6_7_8_9_10_11 ### [  ]
-population_size = 48
-selection_size = 44
+population_size = 24
+selection_size = 20
 migration_size = 4
 layer_expression_rate = .9
 mutation_probability = .05
 crossover_probability = .5
-number_of_generations = 20
+number_of_generations = 10
 batch_size = 100
 number_of_classes = 46
-epochs = 100
+epochs = 10
 initial_population_directory = FALSE
