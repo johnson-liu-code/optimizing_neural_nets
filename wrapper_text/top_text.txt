@@ -1,16 +1,13 @@
 
 
-import keras
-from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, SeparableConv2D, DepthwiseConv2D, Dropout
-from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
-from keras.layers import Embedding, LSTM , Bidirectional, Conv1D
-from keras.layers import MaxPooling1D, AveragePooling1D
-from keras import regularizers
-from keras import metrics
-from keras import callbacks
-from keras.datasets import reuters
+from tensorflow import keras
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, SeparableConv2D, DepthwiseConv2D, Dropout
+from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
+from tensorflow.keras import regularizers
+from tensorflow.keras import metrics
+from tensorflow.keras import callbacks
 from apscheduler.schedulers.background import BackgroundScheduler
 import pickle
 import psutil
