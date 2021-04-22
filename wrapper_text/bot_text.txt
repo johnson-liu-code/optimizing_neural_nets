@@ -17,9 +17,9 @@ model.compile(loss = 'categorical_crossentropy',
 x_train_train = x_train_train.astype('float32')
 x_train_valid = x_train_valid.astype('float32')
 x_test = x_test.astype('float32')
-x_train_train /= 255
-x_train_valid /= 255
-x_test /= 255
+#x_train_train /= 255
+#x_train_valid /= 255
+#x_test /= 255
 
 if not data_augmentation:
     print('Not using data augmentation.')
