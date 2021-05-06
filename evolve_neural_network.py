@@ -213,7 +213,7 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
                     kernel_or_pool_x_ratio = layer.pool_x_ratio
                     kernel_or_pool_y_ratio = layer.pool_y_ratio
 
-                if layer.layer_type == 2 or layer.layer_type == 3  or layer.layer_type == 9  or layer.layer_type == 10:
+                if layer.layer_type == 2 or layer.layer_type == 3 :
                     output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_x_ratio, previous_x_dimension, previous_y_dimension )
                 else:
                     output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
@@ -235,7 +235,7 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
                     kernel_or_pool_x_ratio = layer.pool_x_ratio
                     kernel_or_pool_y_ratio = layer.pool_y_ratio
 
-                if layer.layer_type == 2 or layer.layer_type == 3 or layer.layer_type == 9  or layer.layer_type == 10:
+                if layer.layer_type == 2 or layer.layer_type == 3 :
                     output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_x_ratio, previous_x_dimension, previous_y_dimension )
                 else:
                     output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
