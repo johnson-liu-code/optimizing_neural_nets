@@ -9,5 +9,5 @@ crossover_probability = .5
 number_of_generations = 5
 batch_size = 100
 number_of_classes = 46
-epochs = 5
+epochs = 3
 initial_population_directory = FALSE
