@@ -204,24 +204,6 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
             phenotype = get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
             first_expressed_layer_added = True
 
-            if layer.layer_type in layers_with_kernel or layer.layer_type in layers_with_pooling:
-                if layer.layer_type in layers_with_kernel:
-                    kernel_or_pool_x_ratio = layer.kernel_x_ratio
-                    kernel_or_pool_y_ratio = layer.kernel_y_ratio
-
-                elif layer.layer_type in layers_with_pooling:
-                    kernel_or_pool_x_ratio = layer.pool_x_ratio
-                    kernel_or_pool_y_ratio = layer.pool_y_ratio
-
-                if layer.layer_type == 2 or layer.layer_type == 3 :
-                    output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_x_ratio, previous_x_dimension, previous_y_dimension )
-                else:
-                    output_x_dimension, output_y_dimension = compute_new_dimensions( layer.padding, kernel_or_pool_x_ratio, kernel_or_pool_y_ratio, layer.stride_x_ratio, layer.stride_y_ratio, previous_x_dimension, previous_y_dimension )
-
-                previous_x_dimension = output_x_dimension
-                previous_y_dimension = output_y_dimension
-
-
         elif layer.expression == 1:
             phenotype = get_phenotype( layer, first_expressed_layer_added, previous_x_dimension, previous_y_dimension )
             first_expressed_layer_added = True
