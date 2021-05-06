@@ -870,18 +870,18 @@ def output_dimensionality():            ### Return random integer between 2 and 
 ###########################################
 
 def kernel_x_ratio():
-    return np.random.uniform( 0, 0.05 )
+    return np.random.uniform( 0, 0.005 )
 
 def kernel_y_ratio():
-    return np.random.uniform( 0, 0.05 )
+    return np.random.uniform( 0, 0.005 )
 
 def stride_x_ratio():
     #return np.random.randint( 1, 11 )
-    return np.random.uniform( 0, 0.01 )
+    return np.random.uniform( 0, 0.001 )
 
 def stride_y_ratio():
     #return np.random.randint( 1, 11 )
-    return np.random.uniform( 0, 0.01 )
+    return np.random.uniform( 0, 0.001 )
 
 def act():                              ### Return random integer between 0 and 10 for layer activation type.
     return np.random.randint( 11 )
