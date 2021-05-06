@@ -918,11 +918,11 @@ def dropout_rate():                     ### Return random float between 0 and 1 
 
 def pool_x_ratio():
     #return np.random.randint( 1, 11 )
-    return np.random.uniform( 0, 0.5 )
+    return np.random.uniform( 0, 0.005 )
 
 def pool_y_ratio():
     #return np.random.randint( 1, 11 )
-    return np.random.uniform( 0, 0.5 )
+    return np.random.uniform( 0, 0.005 )
 
 def padding():
     return np.random.randint( 0, 2 )
