@@ -11,7 +11,7 @@ es = keras.callbacks.EarlyStopping(monitor = 'val_loss', verbose = 1)
 #scheduler.start()
 
 model.compile(loss = 'categorical_crossentropy',
-              optimizer = opt,
+              optimizer = 'rmsprop',
               metrics = ['accuracy'])
 
 x_train_train = x_train_train.astype('float32')
