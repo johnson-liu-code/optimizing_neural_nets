@@ -32,7 +32,7 @@ from genes.layer_type import layers_with_kernel
 from genes.layer_type import layers_with_pooling
 
 
-np.random.seed(7)
+np.random.seed(7) #can be removed
 
 
 infile_name = sys.argv[1]
@@ -472,7 +472,7 @@ def mutation( individual, x_dimension_length, y_dimension_length ):
         ### Mutate the output dimensionality.
         r = np.random.uniform( 0, 1 )
         if r <= mutation_probability:
-            layer.output_dimensionality = int( np.random.normal( layer.output_dimensionality, 1 ) )
+            layer.output_dimensionality = int( np.random.normal( layer.output_dimensionality, 1 ) ) #normal should be changed
 
             ### Turn the output dimension to 2 if it is less than 2. This could be changed later.
             ### CHANGE THIS
