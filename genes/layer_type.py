@@ -23,7 +23,7 @@ layer_type = {  0: "Dense",
 
 
 layers_with_padding = [1, 2, 3, 4, 5, 9 ,10]
-layers_with_kernel = [1, 2, 3]
+layers_with_kernel = [1, 2, 3, 8]
 layers_with_activation = [0, 1, 2, 3, 11]
 layers_with_dimensionality = [0, 1, 2, 6 ,7, 8, 11]
 layers_with_pooling = [4, 5, 9 ,10]
