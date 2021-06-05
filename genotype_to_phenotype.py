@@ -30,7 +30,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         kernel_x = max( 1, math.floor( layer.kernel_x_ratio * x_dimension ) )
         kernel_y = max( 1, math.floor( layer.kernel_y_ratio * y_dimension ) )
 
-        phenotype += 'kernel_size = ({}, {}), '.format( str(kernel_x), str(kernel_y) )
+        phenotype += 'kernel_size = ( {}, {} ), '.format( str(kernel_x), str(kernel_y) )
 
         stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
 
@@ -39,7 +39,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         else:
             stride_y = max( 1, math.floor( layer.stride_y_ratio * y_dimension ) )
 
-        phenotype += 'strides = ({}, {}), '.format( str(stride_x), str(stride_y) )
+        phenotype += 'strides = ( {}, {} ), '.format( str(stride_x), str(stride_y) )
 
         phenotype += 'activation = {}, '.format( activation_type[ layer.act ] )
         phenotype += 'use_bias = {}, '.format( use_bias[ layer.use_bias ] )
@@ -64,7 +64,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         kernel_x = max( 1, math.floor( layer.kernel_x_ratio * x_dimension ) )
         kernel_y = max( 1, math.floor( layer.kernel_y_ratio * y_dimension ) )
 
-        phenotype += 'kernel_size = ({}, {}), '.format( str(kernel_x), str(kernel_y) )
+        phenotype += 'kernel_size = ( {}, {} ), '.format( str(kernel_x), str(kernel_y) )
 
         stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
 
@@ -73,7 +73,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         else:
             stride_y = max( 1, math.floor( layer.stride_y_ratio * y_dimension ) )
 
-        phenotype += 'strides = ({}, {}), '.format( str(stride_x), str(stride_y) )
+        phenotype += 'strides = ( {}, {} ), '.format( str(stride_x), str(stride_y) )
         phenotype += 'activation = {}, '.format( activation_type[ layer.act ] )
         phenotype += 'use_bias = {}, '.format( use_bias[ layer.use_bias ] )
         phenotype += 'bias_initializer = {}, '.format( bias_initializer_type[ layer.bias_init ] )
@@ -95,7 +95,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         kernel_x = max( 1, math.floor( layer.kernel_x_ratio * x_dimension ) )
         kernel_y = max( 1, math.floor( layer.kernel_y_ratio * y_dimension ) )
 
-        phenotype  = 'model.add( DepthwiseConv2D( kernel_size = ({}, {}), '.format( str(kernel_x), str(kernel_y) )
+        phenotype  = 'model.add( DepthwiseConv2D( kernel_size = ( {}, {} ), '.format( str(kernel_x), str(kernel_y) )
 
         stride_x = max( 1, math.floor( layer.stride_x_ratio * x_dimension ) )
 
@@ -104,7 +104,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         else:
             stride_y = max( 1, math.floor( layer.stride_y_ratio * y_dimension ) )
 
-        phenotype += 'strides = ({}, {}), '.format( str(stride_x), str(stride_y) )
+        phenotype += 'strides = ( {}, {} ), '.format( str(stride_x), str(stride_y) )
         phenotype += 'activation = {}, '.format( activation_type[ layer.act ] )
         phenotype += 'use_bias = {}, '.format( use_bias[ layer.use_bias ] )
         phenotype += 'bias_initializer = {}, '.format( bias_initializer_type[ layer.bias_init ] )
@@ -144,7 +144,7 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
         pool_x = max( 1, math.floor( layer.pool_x_ratio * x_dimension ) )
         pool_y = max( 1, math.floor( layer.pool_y_ratio * y_dimension ) )
 
-        phenotype += 'pool_size = {}, '.format( str(pool_x), str(pool_y) )
+        phenotype += 'pool_size = ( {}, {} ), '.format( str(pool_x), str(pool_y) )
 
         if layer.padding == 0:
             phenotype += "padding = 'same'"
@@ -172,12 +172,12 @@ def get_phenotype( layer, first_expressed_layer_added, x_dimension, y_dimension 
             else:
                 stride_y = max( 1, math.floor( layer.stride_y_ratio * y_dimension ) )
 
-        phenotype  = 'model.add( MaxPooling2D( strides = ( {}, {} ), '.format( str(stride_y), str(stride_x) )
+        phenotype  = 'model.add( AveragePooling2D( strides = ( {}, {} ), '.format( str(stride_y), str(stride_x) )
 
         pool_x = max( 1, math.floor( layer.pool_x_ratio * x_dimension ) )
         pool_y = max( 1, math.floor( layer.pool_y_ratio * y_dimension ) )
 
-        phenotype += 'pool_size = {}, '.format( str(pool_x), str(pool_y) )
+        phenotype += 'pool_size = ( {}, {} ), '.format( str(pool_x), str(pool_y) )
 
         if layer.padding == 0:
             phenotype += "padding = 'same'"

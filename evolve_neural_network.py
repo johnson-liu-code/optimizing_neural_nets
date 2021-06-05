@@ -273,12 +273,12 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
 
     ### Open neural network file and write in some lines.
     with open( run_file_name, 'w' ) as run_file:
-        run_file.write( 'batch_size = ' + str(batch_size) + '\n')
-        run_file.write( 'number_of_classes = ' + str(number_of_classes) + '\n')
-        run_file.write( 'epochs = ' + str(epochs) + '\n')
+        run_file.write( 'batch_size = ' + str(batch_size) + '\n' )
+        run_file.write( 'number_of_classes = ' + str(number_of_classes) + '\n' )
+        run_file.write( 'epochs = ' + str(epochs) + '\n' )
         ### Write top wrapper to file.
         for line in top_lines:
-            run_file.write( line.split('\n')[0] + '\n')
+            run_file.write( line.split('\n')[0] + '\n' )
 
         ### Write phenotype to file.
         for phenotype in phenotype_list:
@@ -319,7 +319,7 @@ def evaluate( individual, g, original_x_dimension, original_y_dimension ):
         ### Compute the inverse loss.
         inverse_loss = 1/float( out.upper().split()[-11] )
         #inverse_loss = 1/float( extract_text[-3] )
-        n_epochs = int(out.upper().split()[-7])
+        n_epochs = int( out.upper().split()[-7] )
 
     except:
         accuracy = 0
@@ -790,7 +790,7 @@ def compute_layer_dimensions( individual, original_x_dimension, original_y_dimen
     for c, layer in enumerate( individual ):
         layer_type = layer.layer_type
 
-        if ( (layer_type in layers_with_kernel) or (layer_type in layers_with_pooling) ):
+        if ( ( layer_type in layers_with_kernel ) or ( layer_type in layers_with_pooling ) ):
             kernel_x_ratio = layer.kernel_x_ratio
             kernel_y_ratio = layer.kernel_y_ratio
             stride_x_ratio = layer.stride_x_ratio
@@ -959,13 +959,13 @@ def convert( x ):
         return float( x )
 
 ### Extract the initial population
-def seed_population( initial_population_directory ):
+def seed_population( initial_population_directory, max_num_layers ):
     init_population = []
-    for fil in os.listdir(initial_population_directory):
+    for fil in os.listdir( initial_population_directory ):
         file_name = initial_population_directory + '/' + fil
 
         chromosome = []
-        with open(file_name) as txt_file:
+        with open( file_name ) as txt_file:
             lines = txt_file.readlines()
 
             for line in lines:
@@ -976,51 +976,78 @@ def seed_population( initial_population_directory ):
                     field = convert( field.strip(',') )
                     converted_fields.append( field )
 
-                expression = converted_fields[0]
-                layer_type = converted_fields[1]
-                output_dimensionality = converted_fields[2]
-                kernel_x_ratio = converted_fields[3]
-                kernel_y_ratio = converted_fields[4]
-                stride_x_ratio = converted_fields[5]
-                stride_y_ratio = converted_fields[6]
-                act = converted_fields[7]
-                use_bias = converted_fields[8]
-                bias_init = converted_fields[9]
-                bias_reg = converted_fields[10]
-                bias_reg_l1l2_type = converted_fields[11]
-                act_reg = converted_fields[12]
-                act_reg_l1l2_type = converted_fields[13]
-                kernel_init = converted_fields[14]
-                kernel_reg = converted_fields[15]
-                kernel_reg_l1l2_type = converted_fields[16]
-                dropout_rate = converted_fields[17]
-                pool_x_ratio = converted_fields[18]
-                pool_y_ratio = converted_fields[19]
-                padding = converted_fields[20]
+                this_expression = converted_fields[0]
+                this_layer_type = converted_fields[1]
+                this_output_dimensionality = converted_fields[2]
+                this_kernel_x_ratio = converted_fields[3]
+                this_kernel_y_ratio = converted_fields[4]
+                this_stride_x_ratio = converted_fields[5]
+                this_stride_y_ratio = converted_fields[6]
+                this_act = converted_fields[7]
+                this_use_bias = converted_fields[8]
+                this_bias_init = converted_fields[9]
+                this_bias_reg = converted_fields[10]
+                this_bias_reg_l1l2_type = converted_fields[11]
+                this_act_reg = converted_fields[12]
+                this_act_reg_l1l2_type = converted_fields[13]
+                this_kernel_init = converted_fields[14]
+                this_kernel_reg = converted_fields[15]
+                this_kernel_reg_l1l2_type = converted_fields[16]
+                this_dropout_rate = converted_fields[17]
+                this_pool_x_ratio = converted_fields[18]
+                this_pool_y_ratio = converted_fields[19]
+                this_padding = converted_fields[20]
 
-                layer = layer_class( expression,
-                                     layer_type,
-                                     output_dimensionality,
-                                     kernel_x_ratio,
-                                     kernel_y_ratio,
-                                     stride_x_ratio,
-                                     stride_y_ratio,
-                                     act,
-                                     use_bias,
-                                     bias_init,
-                                     bias_reg,
-                                     bias_reg_l1l2_type,
-                                     act_reg,
-                                     act_reg_l1l2_type,
-                                     kernel_init,
-                                     kernel_reg,
-                                     kernel_reg_l1l2_type,
-                                     dropout_rate,
-                                     pool_x_ratio,
-                                     pool_y_ratio,
-                                     padding )
+                layer = layer_class( this_expression,
+                                     this_layer_type,
+                                     this_output_dimensionality,
+                                     this_kernel_x_ratio,
+                                     this_kernel_y_ratio,
+                                     this_stride_x_ratio,
+                                     this_stride_y_ratio,
+                                     this_act,
+                                     this_use_bias,
+                                     this_bias_init,
+                                     this_bias_reg,
+                                     this_bias_reg_l1l2_type,
+                                     this_act_reg,
+                                     this_act_reg_l1l2_type,
+                                     this_kernel_init,
+                                     this_kernel_reg,
+                                     this_kernel_reg_l1l2_type,
+                                     this_dropout_rate,
+                                     this_pool_x_ratio,
+                                     this_pool_y_ratio,
+                                     this_padding )
 
                 chromosome.append( layer )
+
+        created_individual_length = len( chromosome )
+
+        for i in range( max_num_layers - created_individual_length ):
+            layer = layer_class( 0,
+                                 layer_type(),
+                                 output_dimensionality(),
+                                 kernel_x_ratio(),
+                                 kernel_y_ratio(),
+                                 stride_x_ratio(),
+                                 stride_y_ratio(),
+                                 act(),
+                                 use_bias(),
+                                 bias_init(),
+                                 bias_reg(),
+                                 bias_reg_l1l2_type(),
+                                 act_reg(),
+                                 act_reg_l1l2_type(),
+                                 kernel_init(),
+                                 kernel_reg(),
+                                 kernel_reg_l1l2_type(),
+                                 dropout_rate(),
+                                 pool_x_ratio(),
+                                 pool_y_ratio(),
+                                 padding() )
+
+            chromosome.append( layer )
 
         init_population.append( chromosome )
 
@@ -1029,8 +1056,14 @@ def seed_population( initial_population_directory ):
 
 ### Crossover between two parents. Creates two children.
 def crossover( parent1, parent2, crossover_probability ):
-    child1 = list( parent1 )
-    child2 = list( parent2 )
+   
+    #child1 = list( parent1 )
+    #child2 = list( parent2 )
+
+    length = len( parent1 )
+
+    child1 = [ layer_class() for x in range( length ) ]
+    child2 = [ layer_class() for x in range( length ) ]
 
     attributes = parent1[0].get_attributes
 
@@ -1038,6 +1071,7 @@ def crossover( parent1, parent2, crossover_probability ):
         for attribute in attributes:
             r = np.random.uniform( 0, 1 )
             if r <= crossover_probability:
+                print( 'cross!' )
                 attribute1 = parent1[m].get_attribute( attribute )
                 attribute2 = parent2[m].get_attribute( attribute )
 
@@ -1046,6 +1080,54 @@ def crossover( parent1, parent2, crossover_probability ):
 
                 #child1[m].type = 'CHILD'
                 #child2[m].type = 'CHILD'
+
+    #print( 'parent1: {}'.format( parent1 ) )
+    #print( 'parent2: {}'.format( parent2 ) )
+
+    #print( 'child1: {}'.format( child1 ) )
+    #print( 'child2: {}'.format( child2 ) )
+
+    '''
+    print( 'comparing child1 to parent1 ... ' )
+    for c, layer in enumerate( parent1 ):
+        print( 'parent1: ', parent1[c].get_attributes )
+        print( 'child1: ', child1[c].get_attributes )
+
+        print( parent1[c].get_attributes == child1[c].get_attributes )
+
+    print( '\n' )
+
+    print( 'comparing child2 to parent2 ... ' )
+    for c, layer in enumerate( parent2 ):
+        print( parent2[c].get_attributes == child2[c].get_attributes )
+
+    print( '\n' )
+    '''
+
+    '''
+    print( 'parent1:' )
+    for layer in parent1:
+        print( layer.get_attributes )
+
+    print( '\n' )
+
+    print( 'parent2:' )
+    for layer in parent2:
+        print( layer.get_attributes )
+
+    print( '\n' )
+
+    print( 'child1:' )
+    for layer in child1:
+        print( layer.get_attributes )
+
+    print( '\n' )
+
+    print( 'child2:' )
+    for layer in child2:
+        print( layer.get_attributes )
+    '''
+
 
     return child1, child2
 
@@ -1138,7 +1220,7 @@ def main():
 
     #compute_layer_dimensions()
 
-    print('\n... Running genetic algorithm on neural networks ...\n')
+    print( '\n... Running genetic algorithm on neural networks ...\n' )
 
     #print('max_number_of_layers: {}'.format( max_num_layers ) )
 
@@ -1168,15 +1250,15 @@ def main():
     ### Set up the initial population.
     ###     Write 'FALSE' in inFile.txt for initialize with a random population.
     ###     Give a directory in inFile.txt from which to get the initial population.
-    false_list = ['FALSE', 'false', 'False']
+    false_list = [ 'FALSE', 'false', 'False' ]
 
-    print('Generation 0 ...\n')
+    print( 'Generation 0 ...\n' )
 
-    print('Extracting the initial population (if any) and generating remaining individuals ... \n')
+    print( 'Extracting the initial population (if any) and generating remaining individuals ... \n' )
 
     if initial_population_directory not in false_list:
         ### Generate initial set of individuals from the directory containing the zero-th generation of individuals.
-        temp_pop = seed_population( initial_population_directory )
+        temp_pop = seed_population( initial_population_directory, max_num_layers )
 
         ### Fill the remaining spots available for more individuals.
         remaining_pop_to_initialize = population_size - len( temp_pop )
@@ -1200,7 +1282,7 @@ def main():
         x.ID = ID                         ### Assign ID number to individual.
         ID += 1                           ### Increment the ID number.
         #print('x.ID: {}'.format(x.ID))
-        pop.append(x)
+        pop.append( x )
 
     #print('\n\nInitial population ...')
     #for c, i in enumerate(pop):
@@ -1213,7 +1295,7 @@ def main():
     original_x_dimension_list = [ original_x_dimension for x in range( population_size ) ]
     original_y_dimension_list = [ original_y_dimension for x in range( population_size ) ]
 
-    print('Starting the neural network runs in parallel for generation 0 ...\n')
+    print( 'Starting the neural network runs in parallel for generation 0 ...\n' )
 
     #pool = Pool( population_size )
 
@@ -1241,8 +1323,8 @@ def main():
     #fitness_dict = multiprocess_evaluate( pop, 0, original_x_dimension, original_y_dimension )
     fitness_dict = multiprocess_evaluate_2( pop, 0, original_x_dimension, original_y_dimension )
 
-    print('fitnesses: {}\n'.format( fitness_dict ) )
-    print('Finished running the neural networks ... \n')
+    print( 'fitnesses: {}\n'.format( fitness_dict ) )
+    print( 'Finished running the neural networks ... \n' )
 
     #print('Generation 0 fitnesses ...\n')
     #for fitness in fitnesses:
@@ -1265,9 +1347,9 @@ def main():
     print('Creating data file to save the fitness and chromosome of each individual ...\n')
 
     ### Create directory to save the data for the 0th generation.
-    generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format(next_dir_number)
-    if not os.path.isdir(generation_dir_name):
-        os.makedirs(generation_dir_name)
+    generation_dir_name = data_directory_name + '{0:04d}/generation_00000/'.format( next_dir_number )
+    if not os.path.isdir( generation_dir_name ):
+        os.makedirs( generation_dir_name )
 
     ''' 
     ### Save the population of the 0th generation.
@@ -1280,11 +1362,12 @@ def main():
         pickle.dump(fitnesses, fil)
     '''
 
-    generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format(year, month, day, next_dir_number)
+    generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_00000_population.txt'.format( year, month, day, next_dir_number )
     with open( generation_population_file_name, 'w' ) as fil:
         fil.write('initial_population_directory: {}\n'.format( initial_population_directory ) )
 
         fil.write('max_number_of_layers: {}\n'.format( max_num_layers ) )
+        fil.write('possible_layer_types: {}\n'.format( possible_layer_types ) )
 
         fil.write('population_size: {}\n'.format( population_size ) )
         fil.write('selection_size: {}\n'.format( selection_size ) )
@@ -1311,9 +1394,9 @@ def main():
 
     ### Iterate over the generations.
     for g in range( 1, number_of_generations ):
-        print('\nGeneration {} ... \n'.format(g))
+        print( '\nGeneration {} ... \n'.format(g) )
 
-        print('Selecting the parents ...\n')
+        print( 'Selecting the parents ...\n' )
         ### Select the parents.
         selected_parents = toolbox.select( pop, selection_size )
 
@@ -1321,7 +1404,7 @@ def main():
             #print(parent.fitness.values)
             parent.type = 'PARENT'
 
-        print('Generating the children ...\n')
+        print( 'Generating the children ...\n' )
         new_children = []
 
         ### Mate the parents to form new individuals (children).
@@ -1332,8 +1415,8 @@ def main():
 
             #print('child1: {}\nchild2: {}\n'.format(child1, child2 ) )
 
-            new_children.append(child1)
-            new_children.append(child2)
+            new_children.append( child1 )
+            new_children.append( child2 )
 
         print('Mutating the children ...\n')
         ### Mutate the newly generated children.
@@ -1363,10 +1446,18 @@ def main():
         for i in range( 0, migration_size, 2 ):
             #print('parent 1: {}\nparent 2: {}\n'.format( selected_parents[-i], selected_parents[-(i+1)] ))
 
-            mated_migrant1, mated_migrant2 = crossover( selected_parents[-i], selected_parents[-(i+1)], crossover_probability )
+            worst_parent_1 = selected_parents[ -i ]
+            worse_parent_2 = selected_parents[ -( i + 1 ) ]
 
-            mated_migrants.append(mated_migrant1)
-            mated_migrants.append(mated_migrant2)
+            #mated_migrant_1, mated_migrant_2 = crossover( selected_parents[-i], selected_parents[-(i+1)], crossover_probability )
+
+            mated_migrant_1, mated_migrant_2 = crossover( worst_parent_1, migrants[ i ], crossover_probability )
+            mated_migrant_3, mated_migrant_4 = crossover( worst_parent_2, migrants[ i / 2 ], crossover_probability )
+
+            mated_migrants.append( mated_migrant_1 )
+            mated_migrants.append( mated_migrant_2 )
+            mated_migrants.append( mated_migrant_3 )
+            mated_migrants.append( mated_migrant_4 )
 
         #mated_migrants = [ creator.Individual( check_kernel_validity(ind, original_x_dimension, original_y_dimension) ) for ind in mated_migrants ]
         mated_migrants = [ creator.Individual( ind ) for ind in mated_migrants ]
@@ -1427,7 +1518,7 @@ def main():
         #new_fitness_dict = multiprocess_evaluate( new_population, g, original_x_dimension, original_y_dimension )
         new_fitness_dict = multiprocess_evaluate_2( new_population, g, original_x_dimension, original_y_dimension )
 
-        print('new_fitnesses: {}'.format(new_fitness_dict))
+        print( 'new_fitnesses: {}'.format( new_fitness_dict ) )
 
         ### Assign the fitnesses to the new individuals.
         #for ind, fitness in zip( new_population, new_fitnesses ):
@@ -1439,32 +1530,34 @@ def main():
 
         print('Creating data file to save the fitness and chromosome of each individual ...\n')
         ### Create directory to save the data for the g-th generation.
-        generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format(next_dir_number, g)
-        if not os.path.isdir(generation_dir_name):
-            os.makedirs(generation_dir_name)
+        generation_dir_name = data_directory_name + '{0:04d}/generation_{1:05d}/'.format( next_dir_number, g )
+        if not os.path.isdir( generation_dir_name ):
+            os.makedirs( generation_dir_name )
 
-        generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.txt'.format(year, month, day, next_dir_number, g)
+        generation_population_file_name = generation_dir_name + '{0}{1:02d}{2:02d}_{3:04d}_generation_{4:05d}_population.txt'.format( year, month, day, next_dir_number, g )
 
         ### Set pop to be the new population.
         pop = selected_parents + new_population
 
-        with open(generation_population_file_name, 'w') as fil:
-            fil.write('initial_population_directory: {}\n'.format( initial_population_directory ) )
-            fil.write('max_number_of_layers: {}\n'.format( max_num_layers ) )
+        with open( generation_population_file_name, 'w' ) as fil:
+            fil.write( 'initial_population_directory: {}\n'.format( initial_population_directory ) )
 
-            fil.write('population_size: {}\n'.format( population_size ) )
-            fil.write('selection_size: {}\n'.format( selection_size ) )
-            fil.write('migration_size: {}\n'.format( migration_size ) )
-            fil.write('layer_expression_rate: {}\n'.format( layer_expression_rate ) )
+            fil.write( 'max_number_of_layers: {}\n'.format( max_num_layers ) )
+            fil.write( 'possible_layer_types: {}\n'.format( possible_layer_types ) )
 
-            fil.write('mutation_probability (for each gene): {}\n'.format( mutation_probability ) )
-            fil.write('crossover_probability: {}\n'.format( crossover_probability ) )
+            fil.write( 'population_size: {}\n'.format( population_size ) )
+            fil.write( 'selection_size: {}\n'.format( selection_size ) )
+            fil.write( 'migration_size: {}\n'.format( migration_size ) )
+            fil.write( 'layer_expression_rate: {}\n'.format( layer_expression_rate ) )
 
-            fil.write('number_of_generations: {}\n'.format( number_of_generations ) )
-            fil.write('max epochs = {}\n\n'.format( epochs ) )
+            fil.write( 'mutation_probability (for each gene): {}\n'.format( mutation_probability ) )
+            fil.write( 'crossover_probability: {}\n'.format( crossover_probability ) )
+
+            fil.write( 'number_of_generations: {}\n'.format( number_of_generations ) )
+            fil.write( 'max epochs = {}\n\n'.format( epochs ) )
 
             for ind in pop:
-                print('Writing data to file for _{}_ {}'.format( ind.type, ind.ID ) )
+                print( 'Writing data to file for _{}_ {}'.format( ind.type, ind.ID ) )
 
                 if ind.type == 'PARENT' or ind.type == 'CHILD' or ind.type == 'MIGRANT':
                     fil.write( '_{}_ ID: {}, fitness: {}, n_epochs: {}\n'.format( ind.type, ind.ID, ind.fitness, ind.n_epochs ) )
@@ -1481,7 +1574,7 @@ def main():
                 for layer in ind:
                     fil.write( '{}\n'.format( layer.get_attributes ) )
 
-                fil.write('\n')
+                fil.write( '\n' )
 
         #print('\nFinal new population in Generation {}...'.format(g) )
         #for c, ind in enumerate(pop):
